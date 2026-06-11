@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentAppUser } from "@/lib/current-user";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
 import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
@@ -24,10 +24,10 @@ const subscriptionSelect = {
 } as const;
 
 export async function GET() {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const subscriptions = await prisma.subscription.findMany({
@@ -40,10 +40,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const payload = await request.json();
@@ -120,10 +120,10 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE() {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const result = await prisma.subscription.deleteMany({

@@ -2,6 +2,7 @@
 
 import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
 import type { BillingInterval, SubscriptionCategory } from "@/types/subscription";
@@ -29,6 +30,7 @@ const intervalLabels: Record<EmailSubscriptionCandidate["billingInterval"], stri
 };
 
 export default function EmailImportPage() {
+  const router = useRouter();
   const { data: session, status } = useSession();
   const [emailText, setEmailText] = useState("");
   const [candidates, setCandidates] = useState<EmailSubscriptionCandidate[]>([]);
@@ -45,6 +47,11 @@ export default function EmailImportPage() {
   const [isSavingCandidate, setIsSavingCandidate] = useState(false);
 
   useEffect(() => {
+    if (status === "unauthenticated") {
+      router.replace("/login?callbackUrl=/import/email");
+      return;
+    }
+
     if (status !== "authenticated") {
       return;
     }
@@ -63,7 +70,7 @@ export default function EmailImportPage() {
     }
 
     loadConnectionStatus();
-  }, [status]);
+  }, [router, status]);
 
   const visibleCandidates = useMemo(
     () => candidates.filter((candidate) => !hiddenCandidateKeys.includes(getCandidateKey(candidate))),

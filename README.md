@@ -231,6 +231,29 @@ I utvikling kan appen falle tilbake til demo-brukeren `demo@aboslutt.local` når
 
 I produksjon brukes ikke demo-bruker fallback. Uinnloggede brukere sendes til `/login`, og API-ruter for abonnementer returnerer `401`.
 
+Merk: Lokal demo fallback er nå opt-in og krever `ABOSLUTT_ENABLE_DEMO_FALLBACK=true`. Uten denne verdien kreves en ekte session også lokalt.
+
+## Session Handling
+
+Auth.js/NextAuth bruker en bevisst `jwt` session strategy slik at e-post/passord via Credentials, Google OAuth og fremtidig Vipps Login kan dele samme sessionmodell. Session callbacken legger trygt inn `user.id`, `user.email`, `user.name`, `user.image` og en enkel provider-markør uten å eksponere OAuth tokens.
+
+`src/lib/current-user.ts` er felles inngang for server-side brukeroppslag:
+
+- `getCurrentUser()` returnerer innlogget Prisma-bruker eller `null`.
+- `requireCurrentUser()` kaster `UnauthorizedError` når bruker mangler.
+- `unauthorizedResponse()` returnerer `{ "ok": false, "error": "UNAUTHORIZED", "message": "Du må være logget inn." }`.
+- Lokal demo fallback krever `ABOSLUTT_ENABLE_DEMO_FALLBACK=true` og fungerer aldri i produksjon.
+
+Alle abonnement-, konto- og tilkoblings-API-er filtrerer på gjeldende `userId`, slik at en bruker ikke kan lese, endre eller slette en annen brukers data.
+
+Slik tester du session-håndtering:
+
+- `/api/auth/session` skal vise session for innlogget bruker og tom session når utlogget.
+- `/api/me` skal returnere trygg brukerinfo og tilkoblede providers når innlogget.
+- `/api/health` skal vise `authConfigured` og `sessionStrategy` uten secrets.
+- Utlogget `/dashboard`, `/settings`, `/import/email` og `/subscriptions/[id]` skal sende brukeren til `/login`.
+- Innlogget `/dashboard` skal vise riktig bruker og bare brukerens egne abonnementer.
+
 ## Email Og Gmail Import
 
 `/import/email` har to flyter:

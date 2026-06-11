@@ -1,12 +1,42 @@
+import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const demoUserEmail = "demo@aboslutt.local";
 
-export async function getCurrentAppUser() {
+export class UnauthorizedError extends Error {
+  constructor(message = "Du må være logget inn.") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
+
+export function unauthorizedResponse(message = "Du må være logget inn.") {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: "UNAUTHORIZED",
+      message,
+    },
+    { status: 401 },
+  );
+}
+
+export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
+  const sessionUserId = session?.user?.id;
   const sessionEmail = session?.user?.email?.trim().toLowerCase();
+
+  if (sessionUserId) {
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUserId },
+    });
+
+    if (user) {
+      return user;
+    }
+  }
 
   if (sessionEmail) {
     const sessionName = session?.user?.name ?? null;
@@ -26,8 +56,8 @@ export async function getCurrentAppUser() {
     });
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    // TODO: Remove before the local development flow no longer needs seeded demo data.
+  if (isDevelopmentDemoFallbackEnabled()) {
+    // TODO: Remove this local-only fallback when development no longer needs seeded demo data.
     return prisma.user.upsert({
       where: { email: demoUserEmail },
       update: {},
@@ -39,4 +69,22 @@ export async function getCurrentAppUser() {
   }
 
   return null;
+}
+
+export async function requireCurrentUser() {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    throw new UnauthorizedError();
+  }
+
+  return user;
+}
+
+export async function getCurrentAppUser() {
+  return getCurrentUser();
+}
+
+export function isDevelopmentDemoFallbackEnabled() {
+  return process.env.NODE_ENV !== "production" && process.env.ABOSLUTT_ENABLE_DEMO_FALLBACK === "true";
 }

@@ -1,5 +1,6 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
@@ -20,6 +21,7 @@ const vippsClientSecret = process.env.VIPPS_CLIENT_SECRET;
 const vippsWellKnownUrl = process.env.VIPPS_WELL_KNOWN_URL;
 const isVippsConfigured = Boolean(vippsClientId && vippsClientSecret && vippsWellKnownUrl);
 const smtpConfigured = isSmtpConfigured();
+export const sessionStrategy = "jwt" as const;
 
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
@@ -161,7 +163,7 @@ export const authOptions: NextAuthOptions = {
   // Never print provider account payloads or token values in logs.
   providers,
   session: {
-    strategy: "jwt",
+    strategy: sessionStrategy,
   },
   pages: {
     signIn: "/login",
@@ -169,6 +171,36 @@ export const authOptions: NextAuthOptions = {
   },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    async jwt({ token, user, account }) {
+      if (user?.id) {
+        token.id = user.id;
+      }
+
+      if (account?.provider) {
+        token.provider = account.provider;
+      }
+
+      if (!token.id && token.email) {
+        const databaseUser = await prisma.user.findUnique({
+          where: { email: token.email },
+          select: { id: true },
+        });
+        token.id = databaseUser?.id;
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = getTokenId(token);
+        session.user.email = token.email ?? session.user.email ?? null;
+        session.user.name = token.name ?? session.user.name ?? null;
+        session.user.image = token.picture ?? session.user.image ?? null;
+        session.user.provider = typeof token.provider === "string" ? token.provider : null;
+      }
+
+      return session;
+    },
     async signIn({ user, account, email }) {
       if (account?.provider !== "email" || !email?.verificationRequest) {
         return true;
@@ -184,3 +216,11 @@ export const authOptions: NextAuthOptions = {
     },
   },
 };
+
+function getTokenId(token: JWT) {
+  if (typeof token.id === "string") {
+    return token.id;
+  }
+
+  return token.sub ?? "";
+}

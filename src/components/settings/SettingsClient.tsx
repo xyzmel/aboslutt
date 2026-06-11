@@ -57,7 +57,7 @@ export function SettingsClient({
       if (!response.ok) {
         throw new Error("Kunne ikke slette kontodata.");
       }
-      await signOut({ callbackUrl: "/" });
+      await signOut({ callbackUrl: "/login" });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kunne ikke slette kontodata.");
       setIsWorking(false);
@@ -90,7 +90,7 @@ export function SettingsClient({
           </dl>
           <button
             className="mt-5 rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold hover:border-[#C8102E]/50"
-            onClick={() => signOut({ callbackUrl: "/" })}
+            onClick={() => signOut({ callbackUrl: "/login" })}
             type="button"
           >
             Logg ut

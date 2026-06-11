@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { getCurrentAppUser } from "@/lib/current-user";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function DELETE() {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   await prisma.user.delete({

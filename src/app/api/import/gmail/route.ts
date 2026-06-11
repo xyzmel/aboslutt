@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/current-user";
 import {
   dedupeSubscriptionCandidates,
   normalizeMerchantKey,
@@ -41,7 +40,7 @@ type GoogleTokenResponse = {
 };
 
 type GmailImportErrorCode =
-  | "NO_SESSION"
+  | "UNAUTHORIZED"
   | "GOOGLE_NOT_CONNECTED"
   | "GMAIL_SCOPE_MISSING"
   | "GMAIL_TOKEN_EXPIRED"
@@ -63,21 +62,20 @@ class GmailImportError extends Error {
 export async function POST() {
   try {
     debugLog("start");
-    const session = await getServerSession(authOptions);
-    const email = session?.user?.email?.trim().toLowerCase();
+    const currentUser = await getCurrentUser();
 
-    if (!email) {
+    if (!currentUser) {
       throw new GmailImportError(
-        "NO_SESSION",
+        "UNAUTHORIZED",
         "Logg inn med Google før du skanner Gmail.",
         401,
       );
     }
 
-    debugLog("session_found", { email });
+    debugLog("session_found", { userId: currentUser.id });
 
     const user = await prisma.user.findUnique({
-      where: { email },
+      where: { id: currentUser.id },
       include: {
         accounts: {
           where: { provider: "google" },
@@ -96,7 +94,7 @@ export async function POST() {
       );
     }
 
-    debugLog("google_account_found", { userId: user.id, email });
+    debugLog("google_account_found", { userId: user.id });
 
     if (!account.scope?.split(" ").includes(gmailReadonlyScope)) {
       throw new GmailImportError(
@@ -176,6 +174,13 @@ export async function POST() {
         status: error.status,
         message: error.message,
       });
+
+      if (error.code === "UNAUTHORIZED") {
+        return NextResponse.json(
+          { ok: false, error: "UNAUTHORIZED", message: error.message },
+          { status: 401 },
+        );
+      }
 
       return NextResponse.json(
         { error: error.code, message: error.message },

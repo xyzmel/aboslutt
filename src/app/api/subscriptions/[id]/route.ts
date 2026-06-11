@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentAppUser } from "@/lib/current-user";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
 import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
@@ -28,10 +28,10 @@ const subscriptionSelect = {
 } as const;
 
 export async function GET(_request: Request, context: RouteContext) {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const { id } = await context.params;
@@ -48,10 +48,10 @@ export async function GET(_request: Request, context: RouteContext) {
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const { id } = await context.params;
@@ -139,10 +139,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const { id } = await context.params;

@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getCurrentAppUser } from "@/lib/current-user";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 const gmailReadonlyScope = "https://www.googleapis.com/auth/gmail.readonly";
 
 export async function GET() {
-  const currentUser = await getCurrentAppUser();
+  const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+    return unauthorizedResponse();
   }
 
   const googleAccount = await prisma.account.findFirst({
