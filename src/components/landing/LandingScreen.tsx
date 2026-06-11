@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import { MethodCard } from "@/components/landing/MethodCard";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
@@ -8,7 +11,16 @@ const privacyPoints = [
   "Rå e-postinnhold lagres ikke.",
 ];
 
-export function LandingScreen() {
+type LandingScreenProps = {
+  user: {
+    name: string | null;
+    email: string | null;
+  } | null;
+};
+
+export function LandingScreen({ user }: LandingScreenProps) {
+  const userLabel = user?.name ?? user?.email ?? "";
+
   return (
     <main className="min-h-screen bg-[#0D1B2A] text-white">
       <section className="relative overflow-hidden px-5 py-10 sm:py-14">
@@ -24,14 +36,35 @@ export function LandingScreen() {
                   Abo<span className="text-[#C8102E]">slutt</span>
                 </span>
               </Link>
-              <div className="flex gap-3 text-sm font-semibold">
-                <Link className="text-white/60 hover:text-white" href="/login">
-                  Logg inn
-                </Link>
-                <Link className="text-white/60 hover:text-white" href="/register">
-                  Opprett konto
-                </Link>
-              </div>
+              {user ? (
+                <div className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
+                  <Link className="text-white/60 hover:text-white" href="/dashboard">
+                    Oversikt
+                  </Link>
+                  <Link className="text-white/60 hover:text-white" href="/import/email">
+                    Importer e-post
+                  </Link>
+                  <Link className="text-white/60 hover:text-white" href="/settings">
+                    Innstillinger
+                  </Link>
+                  <button
+                    className="text-white/60 hover:text-white"
+                    onClick={() => signOut({ callbackUrl: "/login" })}
+                    type="button"
+                  >
+                    Logg ut
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3 text-sm font-semibold">
+                  <Link className="text-white/60 hover:text-white" href="/login">
+                    Logg inn
+                  </Link>
+                  <Link className="text-white/60 hover:text-white" href="/register">
+                    Opprett konto
+                  </Link>
+                </div>
+              )}
             </div>
 
             <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
@@ -46,20 +79,44 @@ export function LandingScreen() {
               tilgang, foreslå abonnementer og la deg bekrefte hvert funn før det
               lagres i oversikten.
             </p>
+            {user ? (
+              <p className="mt-4 text-sm font-semibold text-white/70">
+                Du er logget inn som {userLabel}.
+              </p>
+            ) : null}
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]"
-                href="/register"
-              >
-                Start gratis beta
-              </Link>
-              <Link
-                className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]"
-                href="/login"
-              >
-                Logg inn
-              </Link>
+              {user ? (
+                <>
+                  <Link
+                    className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]"
+                    href="/dashboard"
+                  >
+                    Gå til oversikt
+                  </Link>
+                  <Link
+                    className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]"
+                    href="/import/email"
+                  >
+                    Importer e-post
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]"
+                    href="/register"
+                  >
+                    Start gratis beta
+                  </Link>
+                  <Link
+                    className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]"
+                    href="/login"
+                  >
+                    Logg inn
+                  </Link>
+                </>
+              )}
             </div>
           </div>
 
@@ -77,15 +134,19 @@ export function LandingScreen() {
             <div className="flex flex-col gap-3">
               <MethodCard
                 badge="Anbefalt"
-                description="Opprett konto med sikker e-postlenke. Ingen passord."
-                href="/register"
+                description={
+                  user
+                    ? "Gå til oversikten og legg inn abonnementer manuelt."
+                    : "Opprett konto med e-post og passord."
+                }
+                href={user ? "/dashboard" : "/register"}
                 icon="@"
                 recommended
                 title="E-post"
               />
               <MethodCard
                 description="Koble til Google for Gmail read-only import."
-                href="/login"
+                href={user ? "/import/email" : "/login"}
                 icon="G"
                 title="Google"
               />

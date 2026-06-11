@@ -76,8 +76,7 @@ const providers: NextAuthOptions["providers"] = [
   GoogleProvider({
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-    // Beta tradeoff: Google is treated as a trusted provider and may link to an
-    // existing user with the same verified email. Review this before full production.
+    // Allowed for beta because Google emails are verified; review before full production.
     allowDangerousEmailAccountLinking: true,
     authorization: {
       params: {

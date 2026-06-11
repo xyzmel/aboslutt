@@ -1,5 +1,26 @@
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { MagicLinkAuthScreen } from "@/components/auth/MagicLinkAuthScreen";
+import { authOptions } from "@/lib/auth";
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{ callbackUrl?: string }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const [session, params] = await Promise.all([getServerSession(authOptions), searchParams]);
+
+  if (session?.user) {
+    redirect(getSafeCallbackUrl(params.callbackUrl));
+  }
+
   return <MagicLinkAuthScreen mode="login" />;
+}
+
+function getSafeCallbackUrl(callbackUrl?: string) {
+  if (!callbackUrl || !callbackUrl.startsWith("/") || callbackUrl.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return callbackUrl;
 }

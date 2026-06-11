@@ -31,6 +31,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
     return errorCode ? getAuthErrorMessage(errorCode) : null;
   });
   const [providers, setProviders] = useState({ google: false, vipps: false });
+  const callbackUrl = getSafeCallbackUrl();
 
   useEffect(() => {
     let isMounted = true;
@@ -94,14 +95,14 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
       email: form.email,
       password: form.password,
       redirect: false,
-      callbackUrl: "/dashboard",
+      callbackUrl,
     });
 
     if (result?.error) {
       throw new Error(getAuthErrorMessage(result.error));
     }
 
-    window.location.href = result?.url ?? "/dashboard";
+    window.location.href = result?.url ?? callbackUrl;
   }
 
   function updateField(field: keyof typeof defaultForm, value: string) {
@@ -218,7 +219,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
             <button
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#DBE4EE] bg-white px-5 py-3.5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
               disabled={!providers.google}
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("google", { callbackUrl })}
               type="button"
             >
               <GoogleIcon />
@@ -227,7 +228,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
             <button
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F3C3CC] bg-[#C8102E] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#a90d27] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
               disabled={!providers.vipps}
-              onClick={() => signIn("vipps", { callbackUrl: "/dashboard" })}
+              onClick={() => signIn("vipps", { callbackUrl })}
               type="button"
             >
               <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-black">Vipps</span>
@@ -264,6 +265,10 @@ async function safeReadJson(response: Response) {
 }
 
 function getAuthErrorMessage(errorCode: string) {
+  if (errorCode === "OAuthAccountNotLinked") {
+    return "Denne e-posten er allerede brukt med en annen innloggingsmetode. Logg inn med e-post/passord først, og koble Google fra innstillinger.";
+  }
+
   if (errorCode === "EMAIL_NOT_VERIFIED") {
     return "E-posten din er ikke bekreftet ennå. Sjekk e-posten din før du logger inn.";
   }
@@ -277,6 +282,20 @@ function getAuthErrorMessage(errorCode: string) {
   }
 
   return "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.";
+}
+
+function getSafeCallbackUrl() {
+  if (typeof window === "undefined") {
+    return "/dashboard";
+  }
+
+  const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
+
+  if (!callbackUrl || !callbackUrl.startsWith("/") || callbackUrl.startsWith("//")) {
+    return "/dashboard";
+  }
+
+  return callbackUrl;
 }
 
 function GoogleIcon() {

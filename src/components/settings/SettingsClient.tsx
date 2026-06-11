@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { signOut } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 
 type SettingsClientProps = {
   name: string | null;
@@ -100,9 +100,22 @@ export function SettingsClient({
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
           <h2 className="text-lg font-extrabold tracking-tight">Tilkoblinger</h2>
           <div className="mt-4 space-y-2 text-sm text-[#5F6F82]">
-            <p>Google: {googleConnected ? "Koblet til" : "Ikke koblet til"}</p>
+            <p>Google/Gmail: {googleConnected ? "Google/Gmail er tilkoblet" : "Ikke koblet til"}</p>
             <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
           </div>
+          {!googleConnected ? (
+            <button
+              className="mt-5 rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+              onClick={() => signIn("google", { callbackUrl: "/settings" })}
+              type="button"
+            >
+              Koble til Google/Gmail
+            </button>
+          ) : (
+            <div className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+              Google/Gmail er tilkoblet.
+            </div>
+          )}
           <p className="mt-4 text-sm leading-6 text-[#5F6F82]">
             Full tilbakekalling hos Google er ikke implementert ennå. Du kan fjerne
             tilgangen i Google-kontoen din under tredjepartstilganger.
