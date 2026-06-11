@@ -101,7 +101,8 @@ export function DashboardClient() {
     (sum, subscription) => sum + subscription.monthlyCost,
     0,
   );
-  const userLabel = session?.user?.name ?? session?.user?.email ?? "Demo-bruker";
+  const isDevelopment = process.env.NODE_ENV !== "production";
+  const userLabel = session?.user?.name ?? session?.user?.email ?? (isDevelopment ? "Lokal dev" : "");
   const userInitials = getUserInitials(session?.user?.name, session?.user?.email);
 
   function toggleSubscription(id: string) {
@@ -229,6 +230,9 @@ export function DashboardClient() {
             <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/connect">
               Koble til mer
             </Link>
+            <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/settings">
+              Innstillinger
+            </Link>
             <div className="flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3">
               <div className="flex h-8 min-w-8 items-center justify-center rounded-full bg-[#C8102E] px-2 text-xs font-black text-white">
                 {userInitials}
@@ -279,9 +283,8 @@ export function DashboardClient() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
-                  Demo-oversikt
+                  {isDevelopment && !session ? "Lokal utvikling" : "Oversikt"}
                 </p>
-                {/* TODO: Require an authenticated session here when Vipps or email login is production-ready. */}
                 <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
                   Abonnementene dine
                 </h1>
@@ -407,13 +410,33 @@ export function DashboardClient() {
 
             {!isLoading && visibleSubscriptions.length === 0 ? (
               <div className="mt-6 rounded-2xl bg-white p-6 text-center text-sm text-[#5F6F82] ring-1 ring-[#DBE4EE]">
-                Ingen abonnementer i denne visningen.
+                <h2 className="text-xl font-extrabold tracking-tight text-[#0D1B2A]">
+                  Ingen abonnementer ennå
+                </h2>
+                <p className="mx-auto mt-2 max-w-xl">
+                  Skann Gmail, lim inn en kvittering eller legg til et abonnement manuelt
+                  med skjemaet over.
+                </p>
+                <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                  <Link
+                    className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+                    href="/import/email"
+                  >
+                    Importer fra Gmail
+                  </Link>
+                  <Link
+                    className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+                    href="/onboarding"
+                  >
+                    Se onboarding
+                  </Link>
+                </div>
               </div>
             ) : null}
 
             {!isLoading && cancellableSubscriptions.length === 0 && subscriptionList.length > 0 ? (
               <div className="mt-6 rounded-2xl bg-white p-6 text-center text-sm text-[#5F6F82] ring-1 ring-[#DBE4EE]">
-                Alle abonnementer i demoen er markert som avsluttet.
+                Alle abonnementer er markert som avsluttet.
               </div>
             ) : null}
           </>
@@ -445,7 +468,7 @@ export function DashboardClient() {
 
 function getUserInitials(name?: string | null, email?: string | null) {
   if (!name && !email) {
-    return "DEMO";
+    return "AB";
   }
 
   const source = name ?? email ?? "";

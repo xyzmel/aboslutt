@@ -12,8 +12,8 @@ export function SuccessScreen({ cancelledCount, monthlySavings, onDone }: Succes
       </div>
       <h2 className="mt-5 text-2xl font-extrabold tracking-tight">Ferdig</h2>
       <p className="mt-3 text-sm leading-6 text-[#5F6F82]">
-        {cancelledCount} abonnementer er markert som avsluttet i demoen. Du har
-        frigjort {monthlySavings} kr per måned i potensiell besparelse.
+        {cancelledCount} abonnementer er markert som avsluttet. Du har frigjort{" "}
+        {monthlySavings} kr per måned i potensiell besparelse.
       </p>
       <button
         className="mt-7 rounded-xl bg-[#0D1B2A] px-6 py-3 text-sm font-bold text-white hover:bg-[#15283c]"

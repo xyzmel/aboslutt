@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       : typeof payload.source === "string"
         ? `Importert fra ${payload.source}`
         : "";
-  const source = typeof payload.source === "string" ? payload.source.trim() : null;
+  const source = typeof payload.source === "string" ? payload.source.trim() : "manual";
   const confidence = typeof payload.confidence === "number" ? payload.confidence : null;
   const monthlyCost = Number(payload.amount ?? payload.monthlyCost);
   const category = payload.category as SubscriptionCategory;
@@ -108,6 +108,20 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(subscription, { status: 201 });
+}
+
+export async function DELETE() {
+  const currentUser = await getCurrentAppUser();
+
+  if (!currentUser) {
+    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+  }
+
+  const result = await prisma.subscription.deleteMany({
+    where: { userId: currentUser.id },
+  });
+
+  return NextResponse.json({ ok: true, deletedCount: result.count });
 }
 
 function getStatusFromPayload(payload: Record<string, unknown>): SubscriptionStatus {

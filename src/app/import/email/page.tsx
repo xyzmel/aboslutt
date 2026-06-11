@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
@@ -20,7 +20,7 @@ const intervalLabels: Record<EmailSubscriptionCandidate["billingInterval"], stri
 };
 
 export default function EmailImportPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [emailText, setEmailText] = useState("");
   const [candidates, setCandidates] = useState<EmailSubscriptionCandidate[]>([]);
   const [hiddenCandidateKeys, setHiddenCandidateKeys] = useState<string[]>([]);
@@ -29,6 +29,29 @@ export default function EmailImportPage() {
   const [scannedMessages, setScannedMessages] = useState<number | null>(null);
   const [savedCandidateName, setSavedCandidateName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailScopeConnected, setGmailScopeConnected] = useState(false);
+
+  useEffect(() => {
+    if (status !== "authenticated") {
+      return;
+    }
+
+    async function loadConnectionStatus() {
+      const response = await fetch("/api/connections", { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+      const result = (await response.json()) as {
+        googleConnected: boolean;
+        gmailScopeConnected: boolean;
+      };
+      setGmailConnected(result.googleConnected);
+      setGmailScopeConnected(result.gmailScopeConnected);
+    }
+
+    loadConnectionStatus();
+  }, [status]);
 
   const visibleCandidates = useMemo(
     () => candidates.filter((candidate) => !hiddenCandidateKeys.includes(getCandidateKey(candidate))),
@@ -42,10 +65,7 @@ export default function EmailImportPage() {
   async function parseEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsParsing(true);
-    setSavedCandidateName(null);
-    setScannedMessages(null);
-    setErrorMessage(null);
-    setHiddenCandidateKeys([]);
+    resetResults();
 
     try {
       const response = await fetch("/api/import/email", {
@@ -62,7 +82,9 @@ export default function EmailImportPage() {
       setCandidates(result.candidates);
 
       if (result.candidates.length === 0) {
-        setErrorMessage("Fant ingen tydelige abonnementskandidater i teksten.");
+        setErrorMessage(
+          "Fant ingen sikre abonnementer. Prøv å lime inn en kvittering eller legg til manuelt.",
+        );
       }
     } catch (error) {
       setCandidates([]);
@@ -74,15 +96,10 @@ export default function EmailImportPage() {
 
   async function scanGmail() {
     setIsScanningGmail(true);
-    setSavedCandidateName(null);
-    setScannedMessages(null);
-    setErrorMessage(null);
-    setHiddenCandidateKeys([]);
+    resetResults();
 
     try {
-      const response = await fetch("/api/import/gmail", {
-        method: "POST",
-      });
+      const response = await fetch("/api/import/gmail", { method: "POST" });
       const result = await response.json();
 
       if (!response.ok) {
@@ -93,7 +110,9 @@ export default function EmailImportPage() {
       setScannedMessages(result.scannedMessages);
 
       if (result.candidates.length === 0) {
-        setErrorMessage("Gmail-skanningen fant ingen tydelige abonnementskandidater.");
+        setErrorMessage(
+          "Fant ingen sikre abonnementer. Prøv å lime inn en kvittering eller legg til manuelt.",
+        );
       }
     } catch (error) {
       setCandidates([]);
@@ -132,6 +151,13 @@ export default function EmailImportPage() {
     }
   }
 
+  function resetResults() {
+    setSavedCandidateName(null);
+    setScannedMessages(null);
+    setErrorMessage(null);
+    setHiddenCandidateKeys([]);
+  }
+
   function ignoreCandidate(candidate: EmailSubscriptionCandidate) {
     setHiddenCandidateKeys((currentKeys) => [...currentKeys, getCandidateKey(candidate)]);
   }
@@ -150,16 +176,26 @@ export default function EmailImportPage() {
       </header>
 
       <section className="mx-auto max-w-4xl px-5 py-8">
-        <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
-          Lokal e-postimport
-        </p>
+        {status === "unauthenticated" ? (
+          <div className="mb-6 rounded-2xl border border-[#F3C3CC] bg-[#F5E6E9] p-5 text-sm text-[#C8102E]">
+            <p className="font-bold">Du må logge inn for å importere abonnementer.</p>
+            <button
+              className="mt-4 rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+              onClick={() => signIn(undefined, { callbackUrl: "/import/email" })}
+              type="button"
+            >
+              Logg inn
+            </button>
+          </div>
+        ) : null}
+
+        <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">E-postimport</p>
         <h1 className="mt-2 text-3xl font-extrabold tracking-tight">
           Finn abonnementer fra kvitteringer
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5F6F82]">
-          Skann Gmail lokalt for private MVP-tester, eller lim inn tekst fra en
-          kvittering. Aboslutt lagrer ikke rå e-postinnhold, bare abonnementet
-          du eventuelt bekrefter.
+          Skann Gmail med read-only tilgang, eller lim inn tekst fra en kvittering.
+          Aboslutt lagrer ikke rå e-postinnhold, bare abonnementet du bekrefter.
         </p>
 
         <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
@@ -167,33 +203,52 @@ export default function EmailImportPage() {
             <div>
               <h2 className="text-lg font-extrabold tracking-tight">Gmail-skanning</h2>
               <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
-                Koble til Google og skann inntil 100 sannsynlige kvitteringer fra
-                de siste 24 månedene. Kun Gmail read-only brukes.
+                Skann inntil 100 sannsynlige kvitteringer fra de siste 24 månedene.
+                Kun Gmail read-only brukes.
               </p>
               <p className="mt-1 text-xs font-semibold text-[#5F6F82]">
                 {session?.user?.email
-                  ? `Innlogget som ${session.user.email}`
+                  ? `Innlogget som ${session.user.email}. Gmail: ${
+                      gmailScopeConnected ? "koblet til" : "ikke koblet til"
+                    }`
                   : "Logg inn med Google for å bruke Gmail-skanning."}
+              </p>
+              {gmailConnected && !gmailScopeConnected ? (
+                <p className="mt-2 text-xs font-semibold text-[#C8102E]">
+                  Gmail read-only mangler. Koble til Google på nytt.
+                </p>
+              ) : null}
+              <p className="mt-3 text-xs font-semibold text-[#C8102E]">
+                Forslag kan inneholde feil. Bekreft alltid kandidaten før den lagres.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:w-44">
-              <button
-                className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
-                onClick={() => signIn("google", { callbackUrl: "/import/email" })}
-                type="button"
-              >
-                Koble til Gmail
-              </button>
-              <button
-                className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-55"
-                disabled={isScanningGmail}
-                onClick={scanGmail}
-                type="button"
-              >
-                {isScanningGmail ? "Skanner..." : "Skann Gmail"}
-              </button>
+              {!gmailScopeConnected ? (
+                <button
+                  className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+                  onClick={() => signIn("google", { callbackUrl: "/import/email" })}
+                  type="button"
+                >
+                  Koble til Gmail
+                </button>
+              ) : (
+                <button
+                  className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-55"
+                  disabled={isScanningGmail}
+                  onClick={scanGmail}
+                  type="button"
+                >
+                  {isScanningGmail ? "Skanner..." : "Skann Gmail"}
+                </button>
+              )}
             </div>
           </div>
+          {isScanningGmail ? (
+            <div className="mt-4 rounded-xl bg-[#F0F4F8] p-4 text-sm font-semibold text-[#4A5568]">
+              <p>Henter sannsynlige kvitteringer...</p>
+              <p className="mt-1">Analyserer kandidater...</p>
+            </div>
+          ) : null}
           {scannedMessages !== null ? (
             <p className="mt-4 text-sm font-semibold text-[#5F6F82]">
               Skannet {scannedMessages} meldinger.

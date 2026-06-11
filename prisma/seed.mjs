@@ -81,6 +81,7 @@ async function main() {
     data: demoSubscriptions.map((subscription) => ({
       ...subscription,
       normalizedName: subscription.name.toLowerCase().replace(/[^a-z0-9æøå]+/gi, ""),
+      source: "demo",
       userId: demoUser.id,
     })),
   });

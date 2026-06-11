@@ -18,8 +18,8 @@ export function ConfirmCancellation({
       <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Bekreft valg</p>
       <h2 className="mt-2 text-2xl font-extrabold tracking-tight">Avslutt abonnementer?</h2>
       <p className="mt-3 text-sm leading-6 text-[#5F6F82]">
-        Dette er en demo. Vi markerer valgte abonnementer som avsluttet lokalt,
-        men sender ingen ekte oppsigelser.
+        Vi markerer valgte abonnementer som avsluttet i oversikten din. Aboslutt
+        sender foreløpig ingen ekte oppsigelser til eksterne leverandører.
       </p>
 
       <div className="mt-5 rounded-xl bg-[#F7F9FC] p-4">

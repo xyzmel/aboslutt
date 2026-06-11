@@ -27,7 +27,7 @@ export async function getCurrentAppUser() {
   }
 
   if (process.env.NODE_ENV !== "production") {
-    // TODO: Remove this development fallback when real auth protection is enabled.
+    // TODO: Remove before the local development flow no longer needs seeded demo data.
     return prisma.user.upsert({
       where: { email: demoUserEmail },
       update: {},

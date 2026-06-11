@@ -170,6 +170,8 @@ Abonnementer er koblet til `User` i Prisma. Auth.js/NextAuth bruker Prisma-adapt
 
 I utvikling kan appen falle tilbake til demo-brukeren `demo@aboslutt.local` når ingen session finnes. Dette gjør at `/dashboard` fortsatt fungerer uten ekte Vipps-, Google- eller SMTP-oppsett. Fallbacken er midlertidig og markert med TODO i `src/lib/current-user.ts`.
 
+I produksjon brukes ikke demo-bruker fallback. Uinnloggede brukere sendes til `/login`, og API-ruter for abonnementer returnerer `401`.
+
 ## Email Og Gmail Import
 
 `/import/email` har to flyter:
@@ -309,6 +311,24 @@ Vipps: http://localhost:3000/api/auth/callback/vipps
 
 SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. Bruk Neon, Supabase, Vercel Postgres eller en annen produksjonsklar Postgres-database før offentlig lansering, og oppdater `DATABASE_URL` i Vercel. Ikke legg inn hemmeligheter i repoet.
 
+## Produksjonssjekkliste
+
+- Legg inn Vercel env vars: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `DATABASE_URL`, Google OAuth-vars, SMTP-vars hvis e-postinnlogging brukes og Vipps-vars hvis Vipps er aktivert.
+- Sett `NEXTAUTH_URL` til kanonisk domene, for eksempel `https://www.aboslutt.no`.
+- Legg inn Google redirect URI: `https://www.aboslutt.no/api/auth/callback/google`.
+- Legg inn Vipps redirect URI: `https://www.aboslutt.no/api/auth/callback/vipps`.
+- Kjør Neon/Postgres-migrasjoner med `npm run prisma:deploy`.
+- Kjør seed bare hvis du ønsker utviklings-/startdata: `npm run prisma:seed`.
+- Kontroller at demo fallback ikke vises i produksjon. Den er kun aktiv når `NODE_ENV !== "production"`.
+- Test `/api/health` og sjekk at `databaseConnected` er `true`.
+
+## Produksjonsfeilsøking
+
+- `401` fra `/api/subscriptions` betyr at brukeren ikke er innlogget eller at session mangler.
+- `redirect_uri_mismatch` fra Google betyr at callback URL i Google Cloud ikke matcher domenet. Legg inn `https://www.aboslutt.no/api/auth/callback/google` og eventuelt `https://aboslutt.no/api/auth/callback/google`.
+- Tom database betyr vanligvis at migrasjoner eller seed ikke er kjørt mot riktig Postgres `DATABASE_URL`.
+- Hvis `/api/health` viser `databaseConnected: false`, kontroller `DATABASE_URL`, Neon-tilgang og at migrasjoner er kjørt.
+
 ## Kvalitetssjekk
 
 ```bash
@@ -321,6 +341,6 @@ npm run build
 - Bekrefte Vipps Login-konfigurasjon, well-known URL-er og scopes mot Vipps MobilePay før produksjon.
 - Konfigurere produksjonsklar SMTP eller alternativ e-postleverandør.
 - Håndtere Google refresh tokens robust ved utløpt access token.
-- Fjerne demo-bruker fallback når ekte auth-beskyttelse er klar.
+- Fjerne lokal demo-bruker fallback helt når utviklingsflyten ikke trenger den lenger.
 - Bygge Outlook OAuth senere.
 - Bygge BankID/Open Banking og ekte oppsigelsesflyter senere.

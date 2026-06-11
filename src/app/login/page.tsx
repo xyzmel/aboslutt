@@ -18,12 +18,9 @@ export default function LoginPage() {
 
     async function checkVippsProvider() {
       const providers = await getProviders();
-
-      if (!isMounted) {
-        return;
+      if (isMounted) {
+        setVippsProviderState(providers?.vipps ? "configured" : "missing");
       }
-
-      setVippsProviderState(providers?.vipps ? "configured" : "missing");
     }
 
     checkVippsProvider().catch(() => {
@@ -47,15 +44,11 @@ export default function LoginPage() {
       callbackUrl: "/dashboard",
     });
 
-    if (result?.error) {
-      setLoginState("error");
-      return;
-    }
-
-    setLoginState("success");
+    setLoginState(result?.error ? "error" : "success");
   }
 
   const isVippsConfigured = vippsProviderState === "configured";
+  const isDevelopment = process.env.NODE_ENV !== "production";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0D1B2A] px-5 py-10">
@@ -70,8 +63,7 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-[#0D1B2A]">Logg inn</h1>
           <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
-            Få en engangslenke på e-post, eller bruk Vipps når ekte nøkler er
-            konfigurert.
+            Få en engangslenke på e-post, eller bruk Vipps når nøkler er konfigurert.
           </p>
 
           <form className="mt-7" onSubmit={sendMagicLink}>
@@ -131,12 +123,14 @@ export default function LoginPage() {
                 : "Legg inn VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET og VIPPS_WELL_KNOWN_URL i .env.local før Vipps Login testes."}
           </p>
 
-          <Link
-            className="mt-5 block text-center text-sm font-semibold text-[#0D1B2A] hover:text-[#C8102E]"
-            href="/dashboard"
-          >
-            Se demo uten innlogging
-          </Link>
+          {isDevelopment ? (
+            <Link
+              className="mt-5 block text-center text-sm font-semibold text-[#0D1B2A] hover:text-[#C8102E]"
+              href="/dashboard"
+            >
+              Lokal utvikling uten innlogging
+            </Link>
+          ) : null}
         </div>
       </section>
     </main>

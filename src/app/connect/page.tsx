@@ -14,17 +14,16 @@ export default function ConnectPage() {
             Flere måter å finne abonnementer på
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[#5F6F82]">
-            I MVP-en bruker vi statiske data. Senere kan Aboslutt kobles mot
-            e-postvideresending, Gmail, Outlook og BankID/Open Banking for å
-            finne faste trekk automatisk.
+            Gmail read-only import er tilgjengelig nå. Senere kan Aboslutt få flere
+            tilkoblinger, som e-postvideresending, Outlook og BankID/Open Banking.
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {["E-postvideresending", "Gmail og Outlook", "BankID/Open Banking"].map((item) => (
+            {["E-postvideresending", "Outlook", "BankID/Open Banking"].map((item) => (
               <div className="rounded-2xl border border-[#DBE4EE] bg-[#F7F9FC] p-5" key={item}>
                 <h2 className="text-sm font-bold">{item}</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
-                  Planlagt integrasjon. Ingen ekte data hentes i demoen.
+                  Planlagt integrasjon. Ingen data hentes fra denne kilden ennå.
                 </p>
               </div>
             ))}
@@ -34,7 +33,7 @@ export default function ConnectPage() {
             className="mt-8 inline-flex rounded-xl bg-[#0D1B2A] px-5 py-3 text-sm font-bold text-white hover:bg-[#15283c]"
             href="/dashboard"
           >
-            Gå til demo-oversikt
+            Gå til oversikt
           </Link>
         </div>
       </section>

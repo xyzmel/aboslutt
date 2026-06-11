@@ -28,6 +28,7 @@ export function SubscriptionCard({
   onDelete,
 }: SubscriptionCardProps) {
   const isCancelled = subscription.status === "cancelled";
+  const sourceLabel = getSourceLabel(subscription.source);
 
   return (
     <article
@@ -42,7 +43,14 @@ export function SubscriptionCard({
           <p className="text-lg font-extrabold tracking-tight text-[#0D1B2A]">
             {subscription.name}
           </p>
-          <p className="mt-1 text-sm text-[#5F6F82]">{categoryLabels[subscription.category]}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <p className="text-sm text-[#5F6F82]">{categoryLabels[subscription.category]}</p>
+            {sourceLabel ? (
+              <span className="rounded-full bg-[#F0F4F8] px-2.5 py-1 text-[0.7rem] font-bold text-[#4A5568]">
+                {sourceLabel}
+              </span>
+            ) : null}
+          </div>
         </div>
         <span
           className={`rounded-full px-3 py-1 text-xs font-bold ${
@@ -91,4 +99,20 @@ export function SubscriptionCard({
       </div>
     </article>
   );
+}
+
+function getSourceLabel(source?: string | null) {
+  if (source === "gmail_import") {
+    return "Gmail";
+  }
+
+  if (source === "manual" || !source) {
+    return "Manuell";
+  }
+
+  if (source === "demo" && process.env.NODE_ENV !== "production") {
+    return "Demo";
+  }
+
+  return null;
 }
