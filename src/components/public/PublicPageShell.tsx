@@ -1,0 +1,34 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+import { PublicFooter } from "@/components/public/PublicFooter";
+
+type PublicPageShellProps = {
+  title: string;
+  intro: string;
+  children: ReactNode;
+};
+
+export function PublicPageShell({ title, intro, children }: PublicPageShellProps) {
+  return (
+    <main className="min-h-screen bg-[#0D1B2A] text-white">
+      <section className="px-5 py-10">
+        <div className="mx-auto w-full max-w-3xl">
+          <Link className="text-sm font-semibold text-white/55 hover:text-white" href="/">
+            Tilbake til Aboslutt
+          </Link>
+          <div className="mt-10 rounded-2xl bg-white p-6 text-[#0D1B2A] shadow-2xl shadow-black/20 sm:p-8">
+            <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
+              Aboslutt
+            </p>
+            <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
+              {title}
+            </h1>
+            <p className="mt-4 text-sm leading-6 text-[#5F6F82]">{intro}</p>
+            <div className="mt-8 space-y-7 text-sm leading-6 text-[#334155]">{children}</div>
+          </div>
+        </div>
+      </section>
+      <PublicFooter />
+    </main>
+  );
+}

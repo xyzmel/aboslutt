@@ -1,0 +1,16 @@
+export type SubscriptionCategory = "streaming" | "software" | "news" | "health";
+
+export type SubscriptionStatus = "active" | "trial" | "yearly" | "cancelled";
+
+export type Subscription = {
+  id: string;
+  name: string;
+  normalizedName?: string | null;
+  category: SubscriptionCategory;
+  monthlyCost: number;
+  status: SubscriptionStatus;
+  nextPayment: string;
+  note?: string | null;
+  source?: string | null;
+  confidence?: number | null;
+};
