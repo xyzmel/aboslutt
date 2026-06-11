@@ -6,7 +6,7 @@ Aboslutt er en Next.js + TypeScript + Tailwind MVP for en norsk abonnementstjene
 
 Aboslutt er først og fremst en manuell abonnementoversikt: alle brukere kan legge inn eksisterende abonnementer selv uten å koble til Gmail. Automatisk Gmail-/e-postskanning er en valgfri SaaS-funksjon som kan foreslå kandidater basert på kvitteringer. Brukeren må alltid bekrefte kandidatene før de lagres, og rå e-postinnhold lagres ikke.
 
-Vipps Login er planlagt, men skal vises som `kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+Vipps Login er planlagt, men skal vises som `Vipps Login kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
 
 ## Kom I Gang
 
@@ -81,7 +81,7 @@ Vipps-provideren registreres bare når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` 
 
 `/register` bruker nå e-post og passord for beta-registrering. Passord lagres kun som bcrypt-hash i `User.passwordHash`. Brukeren må bekrefte e-postadressen via `/verify-email?token=...` før innlogging med passord fungerer.
 
-Google-login fungerer fortsatt, og Vipps vises som `kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+Google-login fungerer fortsatt, og Vipps vises som `Vipps Login kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
 
 Tidligere magic-link e-postprovider ligger fortsatt i auth-oppsettet når SMTP er konfigurert, men beta-flyten prioriterer e-post/passord med verifisering.
 
@@ -397,4 +397,4 @@ npm run build
 - Håndtere Google refresh tokens robust ved utløpt access token.
 - Fjerne lokal demo-bruker fallback helt når utviklingsflyten ikke trenger den lenger.
 - Bygge Outlook OAuth senere.
-- Bygge BankID/Open Banking og ekte oppsigelsesflyter senere.
+- Bygge Open Banking og ekte oppsigelsesflyter senere.

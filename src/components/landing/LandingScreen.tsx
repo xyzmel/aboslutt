@@ -91,7 +91,7 @@ export function LandingScreen() {
               />
               <MethodCard
                 badge="Senere"
-                description="Vipps Login aktiveres når godkjenning er klar."
+                description="Vipps Login kommer snart."
                 href="/login"
                 icon="V"
                 title="Vipps Login"

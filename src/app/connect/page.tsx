@@ -15,11 +15,11 @@ export default function ConnectPage() {
           </h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-[#5F6F82]">
             Gmail read-only import er tilgjengelig nå. Senere kan Aboslutt få flere
-            tilkoblinger, som e-postvideresending, Outlook og BankID/Open Banking.
+            tilkoblinger, som e-postvideresending, Outlook og Open Banking.
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {["E-postvideresending", "Outlook", "BankID/Open Banking"].map((item) => (
+            {["E-postvideresending", "Outlook", "Open Banking"].map((item) => (
               <div className="rounded-2xl border border-[#DBE4EE] bg-[#F7F9FC] p-5" key={item}>
                 <h2 className="text-sm font-bold">{item}</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
