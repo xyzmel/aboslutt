@@ -16,7 +16,7 @@ npm run dev
 
 ## Miljøvariabler
 
-Kopier `.env.example` til `.env.local` for Next.js og behold `.env` for Prisma CLI hvis du bruker standard Prisma-oppsett lokalt.
+Kopier `.env.example` til `.env.local` for Next.js. Prisma CLI leser `.env` når du kjører lokale Prisma-kommandoer, så `.env` må også ha en gyldig Postgres `DATABASE_URL` når du kjører migrering eller seed fra terminalen.
 
 ```bash
 NEXTAUTH_URL=http://localhost:3000
@@ -45,6 +45,8 @@ VIPPS_WELL_KNOWN_URL=
 ```
 
 Ingen ekte hemmeligheter skal committes. `.env.local` skal ikke overskrives av oppsettet.
+
+Viktig: Etter bytte til `provider = "postgresql"` i `prisma/schema.prisma` skal du ikke bruke `DATABASE_URL="file:./dev.db"`. Bruk en Postgres URL som starter med `postgresql://` eller `postgres://`.
 
 ## Sider
 
@@ -200,12 +202,46 @@ Subscription-rutene finner gjeldende app-bruker og filtrerer på `userId`, slik 
 
 Prisma-skjemaet bruker `provider = "postgresql"` og leser tilkoblingen fra `DATABASE_URL`.
 
+### Prisma Env Feilsøking
+
+Next.js leser `.env.local` når appen kjøres lokalt. Prisma CLI leser `.env` når du kjører kommandoer som `npm run prisma:deploy`, `npm run prisma:seed`, `npm run prisma:migrate` og `npm run prisma:reset` fra terminalen.
+
+Hvis `.env` fortsatt inneholder:
+
+```bash
+DATABASE_URL="file:./dev.db"
+```
+
+vil Prisma feile fordi skjemaet nå bruker Postgres. Bytt verdien i `.env` manuelt til en Postgres connection string:
+
+```bash
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
+```
+
+Slik kopierer du URL-en trygt:
+
+1. Gå til Vercel, Neon eller Supabase dashboard.
+2. Åpne databaseprosjektet og finn connection string for Postgres.
+3. Kopier verdien inn i lokal `.env` som `DATABASE_URL`.
+4. Kopier samme verdi inn i `.env.local` hvis Next.js lokalt skal bruke samme database.
+5. Ikke commit `.env` eller `.env.local`.
+
+`prisma:deploy` og `prisma:seed` kjører `scripts/check-database-url.mjs` først. Scriptet stopper kommandoen hvis `DATABASE_URL` ikke starter med `postgresql://` eller `postgres://`.
+
+Hvis Postgres feiler på første migrasjon med `syntax error at or near "\u{feff}"`, ligger det en UTF-8 BOM i starten av en `migration.sql`-fil. Fjern BOM og lagre `migration.sql` som UTF-8 uten BOM. Hvis Prisma allerede rakk å registrere migrasjonen som feilet, marker den som rullet tilbake før du prøver igjen:
+
+```bash
+npx prisma migrate resolve --rolled-back 20260610203000_init
+npm run prisma:deploy
+npm run prisma:seed
+```
+
 ### Lokal Database
 
 Den enkleste lokale utviklingsflyten er å bruke en gratis hosted Postgres-database også lokalt, for eksempel Neon, Supabase eller Vercel Postgres. Da slipper du å installere Postgres på maskinen og bruker samme databasetype som i produksjon.
 
 1. Opprett en development database hos Neon, Supabase eller Vercel Postgres.
-2. Kopier Postgres connection string til `.env.local` som `DATABASE_URL`.
+2. Kopier Postgres connection string til `.env` og `.env.local` som `DATABASE_URL`.
 3. Kjør:
 
 ```bash
@@ -242,6 +278,7 @@ Kjør produksjonsmigrasjoner med:
 
 ```bash
 npm run prisma:deploy
+npm run prisma:seed
 ```
 
 På Vercel kan dette kjøres som en separat deploy-/release-kommando, eller manuelt fra en trygg terminal med produksjonsmiljøvariabler lastet inn.
