@@ -1,9 +1,11 @@
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
 import nodemailer from "nodemailer";
 import { validateEmailMagicLinkRequest } from "@/lib/beta";
+import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
 import { isSmtpConfigured } from "@/lib/smtp";
 
@@ -20,6 +22,51 @@ const isVippsConfigured = Boolean(vippsClientId && vippsClientSecret && vippsWel
 const smtpConfigured = isSmtpConfigured();
 
 const providers: NextAuthOptions["providers"] = [
+  CredentialsProvider({
+    id: "credentials",
+    name: "E-post og passord",
+    credentials: {
+      email: { label: "E-post", type: "email" },
+      password: { label: "Passord", type: "password" },
+    },
+    async authorize(credentials) {
+      const email = credentials?.email?.trim().toLowerCase();
+      const password = credentials?.password ?? "";
+
+      if (!email || !password) {
+        return null;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          emailVerified: true,
+          passwordHash: true,
+        },
+      });
+
+      if (!user?.passwordHash || !user.emailVerified) {
+        return null;
+      }
+
+      const passwordMatches = await verifyPassword(password, user.passwordHash);
+
+      if (!passwordMatches) {
+        return null;
+      }
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      };
+    },
+  }),
   GoogleProvider({
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
@@ -106,6 +153,9 @@ export const authOptions: NextAuthOptions = {
   // OAuth account rows can contain access, refresh and ID tokens.
   // Never print provider account payloads or token values in logs.
   providers,
+  session: {
+    strategy: "jwt",
+  },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
     async signIn({ user, account, email }) {

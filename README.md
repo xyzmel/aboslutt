@@ -79,7 +79,11 @@ Vipps-provideren registreres bare når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` 
 
 ## Beta Registration
 
-`/register` bruker Auth.js/NextAuth Email provider med magic-link. Det finnes ingen passord i Aboslutt.
+`/register` bruker nå e-post og passord for beta-registrering. Passord lagres kun som bcrypt-hash i `User.passwordHash`. Brukeren må bekrefte e-postadressen via `/verify-email?token=...` før innlogging med passord fungerer.
+
+Google-login fungerer fortsatt, og Vipps vises som `kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+
+Tidligere magic-link e-postprovider ligger fortsatt i auth-oppsettet når SMTP er konfigurert, men beta-flyten prioriterer e-post/passord med verifisering.
 
 Beta-registrering styres med:
 

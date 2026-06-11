@@ -12,10 +12,12 @@ model User {
   name          String?
   email         String?        @unique
   emailVerified DateTime?
+  passwordHash  String?
   image         String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
+  emailVerificationTokens EmailVerificationToken[]
   sessions      Session[]
   subscriptions Subscription[]
 }
@@ -56,6 +58,17 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expires   DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Subscription {

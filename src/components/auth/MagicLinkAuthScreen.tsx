@@ -11,92 +11,99 @@ type MagicLinkAuthScreenProps = {
   mode: AuthMode;
 };
 
+const defaultForm = {
+  name: "",
+  email: "",
+  password: "",
+  confirmPassword: "",
+};
+
 export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
-  const [email, setEmail] = useState("");
+  const [form, setForm] = useState(defaultForm);
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [message, setMessage] = useState<string | null>(null);
-  const [smtpConfigured, setSmtpConfigured] = useState(false);
-  const [betaSignupsEnabled, setBetaSignupsEnabled] = useState(true);
-  const [providers, setProviders] = useState({ google: false, vipps: false, email: false });
+  const [providers, setProviders] = useState({ google: false, vipps: false });
 
   useEffect(() => {
     let isMounted = true;
 
-    async function loadStatus() {
-      const [providerList, emailStatusResponse] = await Promise.all([
-        getProviders(),
-        fetch("/api/auth/email-status", { cache: "no-store" }),
-      ]);
-      const emailStatus = (await emailStatusResponse.json()) as {
-        smtpConfigured: boolean;
-        betaSignupsEnabled: boolean;
-      };
-
+    async function loadProviders() {
+      const providerList = await getProviders();
       if (!isMounted) {
         return;
       }
-
       setProviders({
         google: Boolean(providerList?.google),
         vipps: Boolean(providerList?.vipps),
-        email: Boolean(providerList?.email),
       });
-      setSmtpConfigured(emailStatus.smtpConfigured);
-      setBetaSignupsEnabled(emailStatus.betaSignupsEnabled);
     }
 
-    loadStatus().catch(() => {
-      if (isMounted) {
-        setSmtpConfigured(false);
-      }
-    });
+    loadProviders();
 
     return () => {
       isMounted = false;
     };
   }, []);
 
-  async function requestMagicLink(event: FormEvent<HTMLFormElement>) {
+  async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setRequestState("loading");
     setMessage(null);
 
     try {
-      const preflightResponse = await fetch("/api/auth/email-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, mode }),
-      });
-      const preflight = (await preflightResponse.json()) as {
-        allowed: boolean;
-        message?: string | null;
-      };
-
-      if (!preflightResponse.ok || !preflight.allowed) {
-        throw new Error(preflight.message ?? "E-postinnlogging er ikke tilgjengelig.");
+      if (mode === "register") {
+        await registerUser();
+        return;
       }
 
-      const result = await signIn("email", {
-        email,
-        redirect: false,
-        callbackUrl: "/dashboard",
-      });
-
-      if (result?.error) {
-        throw new Error("Kunne ikke sende innloggingslenken akkurat nå.");
-      }
-
-      setRequestState("success");
-      setMessage("Sjekk e-posten din for innloggingslenken.");
+      await loginUser();
     } catch (error) {
       setRequestState("error");
-      setMessage(error instanceof Error ? error.message : "Kunne ikke sende innloggingslenken.");
+      setMessage(error instanceof Error ? error.message : "Noe gikk galt. Prøv igjen.");
     }
+  }
+
+  async function registerUser() {
+    const response = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+    const result = (await response.json()) as { message?: string };
+
+    if (!response.ok) {
+      throw new Error(result.message ?? "Kunne ikke opprette konto.");
+    }
+
+    setRequestState("success");
+    setMessage(result.message ?? "Kontoen er opprettet. Sjekk e-posten din.");
+    setForm(defaultForm);
+  }
+
+  async function loginUser() {
+    const result = await signIn("credentials", {
+      email: form.email,
+      password: form.password,
+      redirect: false,
+      callbackUrl: "/dashboard",
+    });
+
+    if (result?.error) {
+      throw new Error(
+        "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.",
+      );
+    }
+
+    window.location.href = result?.url ?? "/dashboard";
+  }
+
+  function updateField(field: keyof typeof defaultForm, value: string) {
+    setForm((current) => ({ ...current, [field]: value }));
   }
 
   const isRegister = mode === "register";
   const title = isRegister ? "Opprett konto" : "Logg inn";
-  const canUseEmail = smtpConfigured && providers.email && (!isRegister || betaSignupsEnabled);
+  const submitText = isRegister ? "Opprett konto" : "Logg inn";
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0D1B2A] px-5 py-10">
@@ -117,11 +124,72 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
           </div>
           <p className="text-sm leading-6 text-[#5F6F82]">
             {isRegister
-              ? "Opprett konto med en sikker e-postlenke. Ingen passord trengs."
-              : "Velkommen tilbake. Velg innloggingsmetoden som passer best."}
+              ? "Opprett konto med e-post og passord. Du må bekrefte e-posten før innlogging."
+              : "Logg inn med e-post og passord, eller fortsett med Google."}
           </p>
 
-          <div className="mt-6 grid gap-3">
+          <form className="mt-6 grid gap-4" onSubmit={submitAuth}>
+            {isRegister ? (
+              <TextInput
+                label="Navn"
+                onChange={(value) => updateField("name", value)}
+                placeholder="Navnet ditt"
+                value={form.name}
+              />
+            ) : null}
+            <TextInput
+              label="E-post"
+              onChange={(value) => updateField("email", value)}
+              placeholder="navn@eksempel.no"
+              type="email"
+              value={form.email}
+            />
+            <TextInput
+              label="Passord"
+              minLength={8}
+              onChange={(value) => updateField("password", value)}
+              placeholder="Minst 8 tegn"
+              type="password"
+              value={form.password}
+            />
+            {isRegister ? (
+              <TextInput
+                label="Bekreft passord"
+                minLength={8}
+                onChange={(value) => updateField("confirmPassword", value)}
+                placeholder="Gjenta passord"
+                type="password"
+                value={form.confirmPassword}
+              />
+            ) : null}
+            <button
+              className="rounded-xl bg-[#0D1B2A] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
+              disabled={requestState === "loading"}
+              type="submit"
+            >
+              {requestState === "loading" ? "Jobber..." : submitText}
+            </button>
+          </form>
+
+          {message ? (
+            <p
+              className={`mt-4 rounded-xl px-4 py-3 text-sm font-semibold ${
+                requestState === "success"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-[#F5E6E9] text-[#C8102E]"
+              }`}
+            >
+              {message}
+            </p>
+          ) : null}
+
+          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            eller
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
+          <div className="grid gap-3">
             <button
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#DBE4EE] bg-white px-5 py-3.5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
               disabled={!providers.google}
@@ -133,7 +201,6 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
               </span>
               Fortsett med Google
             </button>
-
             <button
               className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F3C3CC] bg-[#C8102E] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#a90d27] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
               disabled={!providers.vipps}
@@ -145,60 +212,6 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
             </button>
           </div>
 
-          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            e-post
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          {!smtpConfigured ? (
-            <p className="mb-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
-              E-postinnlogging er ikke konfigurert enda.
-            </p>
-          ) : null}
-
-          {isRegister && !betaSignupsEnabled ? (
-            <p className="mb-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
-              Beta-registrering er midlertidig stengt.
-            </p>
-          ) : null}
-
-          <form onSubmit={requestMagicLink}>
-            <label className="text-sm font-semibold text-[#4A5568]" htmlFor="email">
-              E-post
-            </label>
-            <input
-              className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-4 py-3 text-sm text-[#0D1B2A] outline-none transition focus:border-[#0D1B2A] disabled:bg-slate-100"
-              disabled={!canUseEmail}
-              id="email"
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="navn@eksempel.no"
-              required
-              type="email"
-              value={email}
-            />
-            <button
-              className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl bg-[#0D1B2A] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
-              disabled={!canUseEmail || requestState === "loading"}
-              type="submit"
-            >
-              <span aria-hidden="true">@</span>
-              {requestState === "loading" ? "Sender lenke..." : "Fortsett med e-post"}
-            </button>
-          </form>
-
-          {message ? (
-            <p
-              className={`mt-3 rounded-xl px-4 py-3 text-sm font-semibold ${
-                requestState === "success"
-                  ? "bg-emerald-50 text-emerald-700"
-                  : "bg-[#F5E6E9] text-[#C8102E]"
-              }`}
-            >
-              {message}
-            </p>
-          ) : null}
-
           <Link
             className="mt-5 block text-center text-sm font-semibold text-[#0D1B2A] hover:text-[#C8102E]"
             href={isRegister ? "/login" : "/register"}
@@ -208,5 +221,36 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
         </div>
       </section>
     </main>
+  );
+}
+
+function TextInput({
+  label,
+  value,
+  placeholder,
+  type = "text",
+  minLength,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  placeholder: string;
+  type?: "text" | "email" | "password";
+  minLength?: number;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm font-semibold text-[#4A5568]">
+      {label}
+      <input
+        className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-4 py-3 text-sm text-[#0D1B2A] outline-none transition focus:border-[#0D1B2A]"
+        minLength={minLength}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        required
+        type={type}
+        value={value}
+      />
+    </label>
   );
 }
