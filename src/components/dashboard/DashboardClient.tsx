@@ -15,6 +15,10 @@ import type {
 
 type DashboardStep = "overview" | "confirm" | "success";
 type CategoryFilter = "all" | SubscriptionCategory;
+type UpcomingPayment = {
+  subscription: Subscription;
+  paymentDate: Date;
+};
 
 type SubscriptionForm = {
   name: string;
@@ -116,17 +120,19 @@ export function DashboardClient() {
     () =>
       subscriptionList
         .filter((subscription) => subscription.status !== "cancelled")
-        .reduce((sum, subscription) => sum + subscription.monthlyCost, 0),
+        .reduce((sum, subscription) => sum + getMonthlyEquivalent(subscription), 0),
     [subscriptionList],
   );
+  const yearlyEstimate = totalMonthlyCost * 12;
   const activeCount = subscriptionList.filter((subscription) =>
     ["active", "trial", "yearly"].includes(subscription.status),
   ).length;
   const trialCount = subscriptionList.filter((subscription) => subscription.status === "trial").length;
   const monthlySavings = selectedSubscriptions.reduce(
-    (sum, subscription) => sum + subscription.monthlyCost,
+    (sum, subscription) => sum + getMonthlyEquivalent(subscription),
     0,
   );
+  const upcomingPayments = useMemo(() => getUpcomingPayments(subscriptionList), [subscriptionList]);
   const isDevelopment = process.env.NODE_ENV !== "production";
   const isSessionLoading = sessionStatus === "loading";
   const userLabel = session?.user?.name ?? session?.user?.email ?? (isDevelopment ? "Lokal dev" : "");
@@ -398,7 +404,17 @@ export function DashboardClient() {
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
               <SummaryCard label="Totalt per måned" value={`${totalMonthlyCost} kr`} />
               <SummaryCard label="Aktive abonnementer" value={String(activeCount)} />
+              <SummaryCard label="Estimert per år" value={`${formatCurrency(yearlyEstimate)} kr`} />
               <SummaryCard label="Prøveperioder" value={String(trialCount)} />
+            </div>
+
+            <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+              <UpcomingPayments subscriptions={upcomingPayments} />
+              <SavingsInsight
+                monthlySavings={monthlySavings}
+                selectedCount={selectedIds.length}
+                trialCount={trialCount}
+              />
             </div>
 
             <form
@@ -558,9 +574,9 @@ export function DashboardClient() {
         <div className="fixed inset-x-0 bottom-0 border-t border-[#DBE4EE] bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
           <div className="mx-auto flex max-w-6xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-bold">{selectedIds.length} valgt</p>
+              <p className="text-sm font-bold">{selectedIds.length} vurderes avsluttet</p>
               <p className="text-sm text-[#5F6F82]">
-                Mulig besparelse: {monthlySavings} kr/mnd
+                Potensiell sparing: {formatCurrency(monthlySavings)} kr/mnd
               </p>
             </div>
             <button
@@ -612,6 +628,237 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function UpcomingPayments({ subscriptions }: { subscriptions: UpcomingPayment[] }) {
+  return (
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-extrabold tracking-tight">Kommende trekk</h2>
+          <p className="mt-1 text-sm text-[#5F6F82]">Neste 30 dager, sortert etter dato.</p>
+        </div>
+        <span className="rounded-full bg-[#F0F4F8] px-3 py-1 text-xs font-bold text-[#4A5568]">
+          {subscriptions.length}
+        </span>
+      </div>
+
+      {subscriptions.length > 0 ? (
+        <div className="mt-4 divide-y divide-[#DBE4EE]">
+          {subscriptions.map(({ subscription, paymentDate }) => (
+            <div className="grid gap-3 py-4 sm:grid-cols-[1fr_auto] sm:items-center" key={subscription.id}>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-extrabold text-[#0D1B2A]">
+                  {subscription.name}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Badge label={getCategoryLabel(subscription.category)} />
+                  <Badge label={getSourceLabel(subscription.source)} />
+                </div>
+              </div>
+              <div className="text-sm sm:text-right">
+                <p className="font-black text-[#0D1B2A]">
+                  {formatCurrency(getMonthlyEquivalent(subscription))} kr
+                </p>
+                <p className="mt-1 text-[#5F6F82]">{formatPaymentDate(paymentDate)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-4 rounded-xl bg-[#F7F9FC] p-4 text-sm text-[#5F6F82]">
+          Ingen kjente trekk de neste 30 dagene. Legg inn neste trekk på abonnementene dine for
+          å få bedre varsling.
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SavingsInsight({
+  monthlySavings,
+  selectedCount,
+  trialCount,
+}: {
+  monthlySavings: number;
+  selectedCount: number;
+  trialCount: number;
+}) {
+  return (
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+      <h2 className="text-lg font-extrabold tracking-tight">Sparingsinnsikt</h2>
+      <p className="mt-1 text-sm text-[#5F6F82]">
+        Velg abonnementer du vurderer å avslutte for å se potensiell sparing.
+      </p>
+      <div className="mt-5 rounded-2xl bg-[#0D1B2A] p-5 text-white">
+        <p className="text-sm font-semibold text-white/65">Potensiell sparing per måned</p>
+        <p className="mt-2 text-4xl font-black">{formatCurrency(monthlySavings)} kr</p>
+        <p className="mt-2 text-sm text-white/65">
+          {selectedCount > 0
+            ? `${selectedCount} abonnementer vurderes avsluttet.`
+            : "Ingen abonnementer er valgt ennå."}
+        </p>
+      </div>
+      {trialCount > 0 ? (
+        <p className="mt-4 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+          Du har {trialCount} prøveperioder. Sjekk dem før neste trekk.
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+function Badge({ label }: { label: string }) {
+  return (
+    <span className="rounded-full bg-[#F0F4F8] px-2.5 py-1 text-xs font-bold text-[#4A5568]">
+      {label}
+    </span>
+  );
+}
+
+function getUpcomingPayments(subscriptions: Subscription[]): UpcomingPayment[] {
+  const today = startOfDay(new Date());
+  const thirtyDaysFromNow = new Date(today);
+  thirtyDaysFromNow.setDate(today.getDate() + 30);
+
+  return subscriptions
+    .filter((subscription) => subscription.status !== "cancelled")
+    .map((subscription) => ({
+      subscription,
+      paymentDate: parsePaymentDate(subscription.nextPayment, today),
+    }))
+    .filter((payment): payment is UpcomingPayment => {
+      const paymentDate = payment.paymentDate;
+      return Boolean(paymentDate && paymentDate >= today && paymentDate <= thirtyDaysFromNow);
+    })
+    .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime());
+}
+
+function getMonthlyEquivalent(subscription: Subscription) {
+  if (subscription.billingInterval === "yearly") {
+    return Math.round(subscription.monthlyCost / 12);
+  }
+
+  return subscription.monthlyCost;
+}
+
+function parsePaymentDate(value: string | null | undefined, today = startOfDay(new Date())) {
+  const trimmedValue = value?.trim();
+
+  if (!trimmedValue || /^ukjent$/i.test(trimmedValue)) {
+    return null;
+  }
+
+  const isoDate = new Date(trimmedValue);
+  if (!Number.isNaN(isoDate.getTime())) {
+    return startOfDay(isoDate);
+  }
+
+  const monthPattern = Object.keys(monthNumbers).join("|");
+  const dayMonthMatch = trimmedValue.match(
+    new RegExp(`(\\d{1,2})\\.?\\s*(${monthPattern})(?:\\s*(\\d{4}))?`, "i"),
+  );
+
+  if (dayMonthMatch) {
+    const day = Number(dayMonthMatch[1]);
+    const month = monthNumbers[dayMonthMatch[2].toLowerCase()];
+    const explicitYear = dayMonthMatch[3] ? Number(dayMonthMatch[3]) : null;
+    const year = explicitYear ?? today.getFullYear();
+    const paymentDate = startOfDay(new Date(year, month, day));
+
+    if (!explicitYear && paymentDate < today) {
+      paymentDate.setFullYear(paymentDate.getFullYear() + 1);
+    }
+
+    return paymentDate;
+  }
+
+  const monthYearMatch = trimmedValue.match(new RegExp(`(${monthPattern})\\s*(\\d{4})`, "i"));
+
+  if (monthYearMatch) {
+    return startOfDay(new Date(Number(monthYearMatch[2]), monthNumbers[monthYearMatch[1].toLowerCase()], 1));
+  }
+
+  return null;
+}
+
+function startOfDay(date: Date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function formatPaymentDate(date: Date | null) {
+  if (!date) {
+    return "Ukjent";
+  }
+
+  return new Intl.DateTimeFormat("nb-NO", {
+    day: "numeric",
+    month: "short",
+  }).format(date);
+}
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("nb-NO", { maximumFractionDigits: 0 }).format(value);
+}
+
+function getCategoryLabel(category: SubscriptionCategory) {
+  return categoryOptions.find(([value]) => value === category)?.[1] ?? category;
+}
+
+function getSourceLabel(source?: string | null) {
+  if (source === "gmail_import") {
+    return "Gmail";
+  }
+
+  if (source === "google") {
+    return "Google";
+  }
+
+  if (source === "vipps") {
+    return "Vipps";
+  }
+
+  if (source === "demo" && process.env.NODE_ENV !== "production") {
+    return "Demo";
+  }
+
+  return "Manuell";
+}
+
+const monthNumbers: Record<string, number> = {
+  jan: 0,
+  januar: 0,
+  january: 0,
+  feb: 1,
+  februar: 1,
+  february: 1,
+  mar: 2,
+  mars: 2,
+  march: 2,
+  apr: 3,
+  april: 3,
+  mai: 4,
+  may: 4,
+  jun: 5,
+  juni: 5,
+  june: 5,
+  jul: 6,
+  juli: 6,
+  july: 6,
+  aug: 7,
+  august: 7,
+  sep: 8,
+  september: 8,
+  okt: 9,
+  oktober: 9,
+  oct: 9,
+  october: 9,
+  nov: 10,
+  november: 10,
+  des: 11,
+  desember: 11,
+  dec: 11,
+  december: 11,
+};
 
 function TextInput({
   label,
