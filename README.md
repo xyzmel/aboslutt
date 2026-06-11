@@ -24,11 +24,13 @@ NEXTAUTH_SECRET=replace-with-a-local-secret
 # Bruk lokal Postgres eller en hosted development database fra Neon, Supabase eller Vercel Postgres.
 DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?sslmode=require"
 
-EMAIL_SERVER_HOST=
-EMAIL_SERVER_PORT=587
-EMAIL_SERVER_USER=
+EMAIL_SERVER_HOST=smtp.resend.com
+EMAIL_SERVER_PORT=465
+EMAIL_SERVER_USER=resend
 EMAIL_SERVER_PASSWORD=
-EMAIL_FROM="Aboslutt <no-reply@aboslutt.local>"
+EMAIL_FROM="Aboslutt <no-reply@aboslutt.no>"
+BETA_SIGNUPS_ENABLED=true
+BETA_ALLOWED_EMAILS=
 
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
@@ -52,6 +54,7 @@ Viktig: Etter bytte til `provider = "postgresql"` i `prisma/schema.prisma` skal 
 
 - `/` landingsside med valg av metode
 - `/login` e-post magic-link, Google/Gmail via importflyt og Vipps Login når konfigurert
+- `/register` opprett konto med e-post magic-link
 - `/dashboard` databasebasert abonnementoversikt med legg til, slett og vedvarende avslutning
 - `/import/email` lokal import fra Gmail-skanning eller innlimt kvitteringstekst
 - `/connect` placeholder for fremtidige koblinger
@@ -67,6 +70,41 @@ Aktive providers:
 - Vipps Login via OIDC/OAuth når Vipps-miljøvariablene er satt
 
 Vipps-provideren registreres bare når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` og `VIPPS_WELL_KNOWN_URL` finnes. Hvis de mangler, krasjer ikke appen, og Vipps-knappen på `/login` vises som deaktivert.
+
+## Beta Registration
+
+`/register` bruker Auth.js/NextAuth Email provider med magic-link. Det finnes ingen passord i Aboslutt.
+
+Beta-registrering styres med:
+
+```bash
+BETA_SIGNUPS_ENABLED=true
+BETA_ALLOWED_EMAILS=
+```
+
+Hvis `BETA_SIGNUPS_ENABLED=false`, kan nye brukere ikke registrere seg, men eksisterende brukere kan fortsatt logge inn. Hvis `BETA_ALLOWED_EMAILS` er satt, må e-postadressen være i den kommaseparerte listen for å få magic-link:
+
+```bash
+BETA_ALLOWED_EMAILS=person@example.com,annen@example.com
+```
+
+## SMTP Setup
+
+For Resend SMTP i produksjon:
+
+```bash
+EMAIL_SERVER_HOST=smtp.resend.com
+EMAIL_SERVER_PORT=465
+EMAIL_SERVER_USER=resend
+EMAIL_SERVER_PASSWORD=din-resend-api-key
+EMAIL_FROM="Aboslutt <no-reply@aboslutt.no>"
+```
+
+Produksjonssending krever ofte at domenet er verifisert hos SMTP-leverandøren. For Resend betyr det normalt DNS-verifisering av `aboslutt.no`.
+
+Brevo kan brukes som alternativ SMTP-leverandør. Da bruker du SMTP-verdiene fra Brevo dashboardet i de samme `EMAIL_SERVER_*` miljøvariablene.
+
+Etter endring av SMTP- eller beta-env vars i Vercel må prosjektet redeployes.
 
 ## Vipps Login Setup
 
@@ -313,7 +351,7 @@ SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. 
 
 ## Produksjonssjekkliste
 
-- Legg inn Vercel env vars: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `DATABASE_URL`, Google OAuth-vars, SMTP-vars hvis e-postinnlogging brukes og Vipps-vars hvis Vipps er aktivert.
+- Legg inn Vercel env vars: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `DATABASE_URL`, Google OAuth-vars, SMTP-vars, `BETA_SIGNUPS_ENABLED`, `BETA_ALLOWED_EMAILS` og Vipps-vars hvis Vipps er aktivert.
 - Sett `NEXTAUTH_URL` til kanonisk domene, for eksempel `https://www.aboslutt.no`.
 - Legg inn Google redirect URI: `https://www.aboslutt.no/api/auth/callback/google`.
 - Legg inn Vipps redirect URI: `https://www.aboslutt.no/api/auth/callback/vipps`.
@@ -321,6 +359,8 @@ SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. 
 - Kjør seed bare hvis du ønsker utviklings-/startdata: `npm run prisma:seed`.
 - Kontroller at demo fallback ikke vises i produksjon. Den er kun aktiv når `NODE_ENV !== "production"`.
 - Test `/api/health` og sjekk at `databaseConnected` er `true`.
+- Sjekk at `/api/health` viser `smtpConfigured: true` før e-postregistrering annonseres.
+- Redeploy Vercel etter endringer i env vars.
 
 ## Produksjonsfeilsøking
 
@@ -328,6 +368,10 @@ SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. 
 - `redirect_uri_mismatch` fra Google betyr at callback URL i Google Cloud ikke matcher domenet. Legg inn `https://www.aboslutt.no/api/auth/callback/google` og eventuelt `https://aboslutt.no/api/auth/callback/google`.
 - Tom database betyr vanligvis at migrasjoner eller seed ikke er kjørt mot riktig Postgres `DATABASE_URL`.
 - Hvis `/api/health` viser `databaseConnected: false`, kontroller `DATABASE_URL`, Neon-tilgang og at migrasjoner er kjørt.
+- `EmailSignin` betyr ofte at SMTP-verdier mangler eller at SMTP-leverandøren avviser sendingen.
+- `ECONNREFUSED ::1:587` betyr vanligvis at appen prøver å bruke lokal SMTP på port 587. Sett riktige `EMAIL_SERVER_*` verdier i Vercel og redeploy.
+- Hvis UI sier `E-postinnlogging er ikke konfigurert enda`, mangler en eller flere SMTP-env vars.
+- Hvis magic link ikke mottas, sjekk spam/promotions, Resend/Brevo sending logs, domenestatus og at `EMAIL_FROM` bruker et verifisert domene.
 
 ## Kvalitetssjekk
 

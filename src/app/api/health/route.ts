@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { areBetaSignupsEnabled } from "@/lib/beta";
 import { prisma } from "@/lib/prisma";
+import { isSmtpConfigured } from "@/lib/smtp";
 
 export async function GET() {
   try {
@@ -12,6 +14,8 @@ export async function GET() {
       ok: true,
       environment: process.env.NODE_ENV,
       databaseConnected: true,
+      smtpConfigured: isSmtpConfigured(),
+      betaSignupsEnabled: areBetaSignupsEnabled(),
       userCount,
       subscriptionCount,
     });
@@ -21,6 +25,8 @@ export async function GET() {
         ok: false,
         environment: process.env.NODE_ENV,
         databaseConnected: false,
+        smtpConfigured: isSmtpConfigured(),
+        betaSignupsEnabled: areBetaSignupsEnabled(),
         userCount: null,
         subscriptionCount: null,
       },

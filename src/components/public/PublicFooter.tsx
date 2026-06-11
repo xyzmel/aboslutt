@@ -12,6 +12,12 @@ export function PublicFooter() {
           </a>
         </div>
         <nav className="flex flex-wrap gap-4">
+          <Link className="hover:text-white" href="/register">
+            Opprett konto
+          </Link>
+          <Link className="hover:text-white" href="/login">
+            Logg inn
+          </Link>
           <Link className="hover:text-white" href="/privacy">
             Personvern
           </Link>
