@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Subscription } from "@/types/subscription";
 
 type SubscriptionCardProps = {
@@ -5,6 +6,7 @@ type SubscriptionCardProps = {
   isSelected: boolean;
   onToggle: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (subscription: Subscription) => void;
 };
 
 const categoryLabels: Record<Subscription["category"], string> = {
@@ -21,11 +23,18 @@ const statusLabels: Record<Subscription["status"], string> = {
   cancelled: "Avsluttet",
 };
 
+const billingIntervalLabels: Record<Subscription["billingInterval"], string> = {
+  monthly: "Månedlig",
+  yearly: "Årlig",
+  unknown: "Ukjent",
+};
+
 export function SubscriptionCard({
   subscription,
   isSelected,
   onToggle,
   onDelete,
+  onEdit,
 }: SubscriptionCardProps) {
   const isCancelled = subscription.status === "cancelled";
   const sourceBadge = getSourceBadge(subscription.source);
@@ -68,7 +77,9 @@ export function SubscriptionCard({
       <div className="mt-5 grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
         <div>
           <p className="text-3xl font-black text-[#0D1B2A]">{subscription.monthlyCost} kr</p>
-          <p className="text-sm text-[#5F6F82]">per måned</p>
+          <p className="text-sm text-[#5F6F82]">
+            {billingIntervalLabels[subscription.billingInterval] ?? "Månedlig"}
+          </p>
         </div>
         <div className="text-sm leading-5 text-[#5F6F82] sm:text-right">
           <p className="font-semibold text-[#4A5568]">Neste trekk</p>
@@ -82,7 +93,7 @@ export function SubscriptionCard({
         </p>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <button
           className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
             isSelected
@@ -95,6 +106,19 @@ export function SubscriptionCard({
         >
           {isSelected ? "Valgt" : isCancelled ? "Avsluttet" : "Velg"}
         </button>
+        <button
+          className="rounded-xl border border-[#DBE4EE] px-4 py-2.5 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+          onClick={() => onEdit(subscription)}
+          type="button"
+        >
+          Rediger
+        </button>
+        <Link
+          className="rounded-xl border border-[#DBE4EE] px-4 py-2.5 text-center text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+          href={`/subscriptions/${subscription.id}`}
+        >
+          Detaljer
+        </Link>
         <button
           className="rounded-xl border border-[#F3C3CC] px-4 py-2.5 text-sm font-bold text-[#C8102E] hover:bg-[#F5E6E9]"
           onClick={() => onDelete(subscription.id)}
@@ -110,7 +134,14 @@ export function SubscriptionCard({
 function getSourceBadge(source?: string | null) {
   if (source === "gmail_import") {
     return {
-      label: "Importert fra Gmail",
+      label: "Gmail",
+      className: "bg-blue-50 text-blue-700",
+    };
+  }
+
+  if (source === "google") {
+    return {
+      label: "Google",
       className: "bg-blue-50 text-blue-700",
     };
   }

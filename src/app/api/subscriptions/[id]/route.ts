@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getCurrentAppUser } from "@/lib/current-user";
+import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
-import type { SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
+import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -9,6 +10,7 @@ type RouteContext = {
 
 const allowedCategories: SubscriptionCategory[] = ["streaming", "software", "news", "health"];
 const allowedStatuses: SubscriptionStatus[] = ["active", "trial", "yearly", "cancelled"];
+const allowedBillingIntervals: BillingInterval[] = ["monthly", "yearly", "unknown"];
 
 const subscriptionSelect = {
   id: true,
@@ -17,11 +19,33 @@ const subscriptionSelect = {
   category: true,
   monthlyCost: true,
   status: true,
+  billingInterval: true,
   nextPayment: true,
   note: true,
   source: true,
   confidence: true,
+  createdAt: true,
 } as const;
+
+export async function GET(_request: Request, context: RouteContext) {
+  const currentUser = await getCurrentAppUser();
+
+  if (!currentUser) {
+    return NextResponse.json({ error: "Ikke innlogget." }, { status: 401 });
+  }
+
+  const { id } = await context.params;
+  const subscription = await prisma.subscription.findFirst({
+    where: { id, userId: currentUser.id },
+    select: subscriptionSelect,
+  });
+
+  if (!subscription) {
+    return NextResponse.json({ error: "Fant ikke abonnementet." }, { status: 404 });
+  }
+
+  return NextResponse.json(subscription);
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const currentUser = await getCurrentAppUser();
@@ -37,8 +61,10 @@ export async function PATCH(request: Request, context: RouteContext) {
     category?: SubscriptionCategory;
     monthlyCost?: number;
     status?: SubscriptionStatus;
+    billingInterval?: BillingInterval;
     nextPayment?: string;
     note?: string | null;
+    normalizedName?: string | null;
   } = {};
 
   if (typeof payload.name === "string") {
@@ -46,7 +72,9 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!name) {
       return NextResponse.json({ error: "Navn kan ikke være tomt." }, { status: 400 });
     }
-    data.name = name;
+    const normalizedName = normalizeMerchantName(name);
+    data.name = normalizedName;
+    data.normalizedName = normalizeMerchantKey(normalizedName);
   }
 
   if (payload.category !== undefined) {
@@ -71,6 +99,14 @@ export async function PATCH(request: Request, context: RouteContext) {
       return NextResponse.json({ error: "Ugyldig månedspris." }, { status: 400 });
     }
     data.monthlyCost = monthlyCost;
+  }
+
+  if (payload.billingInterval !== undefined) {
+    const billingInterval = payload.billingInterval as BillingInterval;
+    if (!allowedBillingIntervals.includes(billingInterval)) {
+      return NextResponse.json({ error: "Ugyldig faktureringsintervall." }, { status: 400 });
+    }
+    data.billingInterval = billingInterval;
   }
 
   if (typeof payload.nextPayment === "string") {

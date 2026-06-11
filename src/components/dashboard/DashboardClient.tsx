@@ -1,12 +1,13 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellation";
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
 import type {
+  BillingInterval,
   Subscription,
   SubscriptionCategory,
   SubscriptionStatus,
@@ -20,6 +21,7 @@ type SubscriptionForm = {
   category: SubscriptionCategory;
   monthlyCost: string;
   status: SubscriptionStatus;
+  billingInterval: BillingInterval;
   nextPayment: string;
   note: string;
 };
@@ -37,9 +39,30 @@ const defaultForm: SubscriptionForm = {
   category: "streaming",
   monthlyCost: "",
   status: "active",
+  billingInterval: "monthly",
   nextPayment: "",
   note: "",
 };
+
+const categoryOptions: [SubscriptionCategory, string][] = [
+  ["streaming", "Streaming"],
+  ["software", "Programvare"],
+  ["news", "Nyheter"],
+  ["health", "Helse"],
+];
+
+const statusOptions: [SubscriptionStatus, string][] = [
+  ["active", "Aktiv"],
+  ["trial", "Prøveperiode"],
+  ["yearly", "Årlig"],
+  ["cancelled", "Avsluttet"],
+];
+
+const billingIntervalOptions: [BillingInterval, string][] = [
+  ["monthly", "Månedlig"],
+  ["yearly", "Årlig"],
+  ["unknown", "Ukjent"],
+];
 
 export function DashboardClient() {
   const { data: session } = useSession();
@@ -50,8 +73,11 @@ export function DashboardClient() {
   const [lastCancelledCount, setLastCancelledCount] = useState(0);
   const [lastMonthlySavings, setLastMonthlySavings] = useState(0);
   const [form, setForm] = useState<SubscriptionForm>(defaultForm);
+  const [editForm, setEditForm] = useState<SubscriptionForm>(defaultForm);
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -173,6 +199,58 @@ export function DashboardClient() {
       setSelectedIds((currentIds) => currentIds.filter((selectedId) => selectedId !== id));
     } catch {
       setErrorMessage("Kunne ikke slette abonnementet.");
+    }
+  }
+
+  function startEditingSubscription(subscription: Subscription) {
+    setEditingSubscription(subscription);
+    setEditForm({
+      name: subscription.name,
+      category: subscription.category,
+      monthlyCost: String(subscription.monthlyCost),
+      status: subscription.status,
+      billingInterval: subscription.billingInterval ?? "monthly",
+      nextPayment: subscription.nextPayment,
+      note: subscription.note ?? "",
+    });
+  }
+
+  async function updateSubscription(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingSubscription) {
+      return;
+    }
+
+    setIsUpdating(true);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`/api/subscriptions/${editingSubscription.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editForm,
+          monthlyCost: Number(editForm.monthlyCost),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Kunne ikke oppdatere abonnementet.");
+      }
+
+      const updatedSubscription = (await response.json()) as Subscription;
+      setSubscriptionList((currentSubscriptions) =>
+        currentSubscriptions.map((subscription) =>
+          subscription.id === updatedSubscription.id ? updatedSubscription : subscription,
+        ),
+      );
+      setEditingSubscription(null);
+      setEditForm(defaultForm);
+    } catch {
+      setErrorMessage("Kunne ikke oppdatere abonnementet.");
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -332,12 +410,7 @@ export function DashboardClient() {
                       category: value as SubscriptionCategory,
                     }))
                   }
-                  options={[
-                    ["streaming", "Streaming"],
-                    ["software", "Programvare"],
-                    ["news", "Nyheter"],
-                    ["health", "Helse"],
-                  ]}
+                  options={[...categoryOptions]}
                   value={form.category}
                 />
                 <SelectInput
@@ -351,6 +424,17 @@ export function DashboardClient() {
                     ["yearly", "Årlig"],
                   ]}
                   value={form.status}
+                />
+                <SelectInput
+                  label="Intervall"
+                  onChange={(value) =>
+                    setForm((current) => ({
+                      ...current,
+                      billingInterval: value as BillingInterval,
+                    }))
+                  }
+                  options={[...billingIntervalOptions]}
+                  value={form.billingInterval}
                 />
                 <TextInput
                   label="Neste trekk"
@@ -402,6 +486,7 @@ export function DashboardClient() {
                     isSelected={selectedIds.includes(subscription.id)}
                     key={subscription.id}
                     onDelete={deleteSubscription}
+                    onEdit={startEditingSubscription}
                     onToggle={toggleSubscription}
                     subscription={subscription}
                   />
@@ -468,6 +553,16 @@ export function DashboardClient() {
             </button>
           </div>
         </div>
+      ) : null}
+
+      {editingSubscription ? (
+        <SubscriptionEditModal
+          form={editForm}
+          isSaving={isUpdating}
+          onClose={() => setEditingSubscription(null)}
+          onSubmit={updateSubscription}
+          setForm={setEditForm}
+        />
       ) : null}
     </main>
   );
@@ -553,5 +648,118 @@ function SelectInput({
         ))}
       </select>
     </label>
+  );
+}
+
+function SubscriptionEditModal({
+  form,
+  setForm,
+  onClose,
+  onSubmit,
+  isSaving,
+}: {
+  form: SubscriptionForm;
+  setForm: Dispatch<SetStateAction<SubscriptionForm>>;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  isSaving: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-[#0D1B2A]/50 p-4 sm:items-center sm:justify-center">
+      <form
+        className="w-full rounded-2xl bg-white p-5 shadow-2xl sm:max-w-2xl"
+        onSubmit={onSubmit}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight">Rediger abonnement</h2>
+            <p className="mt-1 text-sm text-[#5F6F82]">
+              Oppdater pris, status, intervall og notater når noe endrer seg.
+            </p>
+          </div>
+          <button
+            className="rounded-full border border-[#DBE4EE] px-3 py-1.5 text-sm font-bold text-[#0D1B2A]"
+            onClick={onClose}
+            type="button"
+          >
+            Lukk
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <TextInput
+            label="Navn"
+            onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+            placeholder="F.eks. HBO Max"
+            value={form.name}
+          />
+          <TextInput
+            inputMode="numeric"
+            label="Kr/mnd"
+            onChange={(value) => setForm((current) => ({ ...current, monthlyCost: value }))}
+            placeholder="149"
+            value={form.monthlyCost}
+          />
+          <SelectInput
+            label="Kategori"
+            onChange={(value) =>
+              setForm((current) => ({ ...current, category: value as SubscriptionCategory }))
+            }
+            options={[...categoryOptions]}
+            value={form.category}
+          />
+          <SelectInput
+            label="Status"
+            onChange={(value) =>
+              setForm((current) => ({ ...current, status: value as SubscriptionStatus }))
+            }
+            options={[...statusOptions]}
+            value={form.status}
+          />
+          <SelectInput
+            label="Intervall"
+            onChange={(value) =>
+              setForm((current) => ({ ...current, billingInterval: value as BillingInterval }))
+            }
+            options={[...billingIntervalOptions]}
+            value={form.billingInterval}
+          />
+          <TextInput
+            label="Neste trekk"
+            onChange={(value) => setForm((current) => ({ ...current, nextPayment: value }))}
+            placeholder="12. aug"
+            value={form.nextPayment}
+          />
+          <label className="text-sm font-semibold text-[#4A5568] sm:col-span-2">
+            Notat
+            <textarea
+              className="mt-2 min-h-24 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              onChange={(event) =>
+                setForm((current) => ({ ...current, note: event.target.value }))
+              }
+              placeholder="Valgfritt"
+              value={form.note}
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+            onClick={onClose}
+            type="button"
+          >
+            Avbryt
+          </button>
+          <button
+            className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-50"
+            disabled={isSaving}
+            type="submit"
+          >
+            {isSaving ? "Lagrer..." : "Lagre endringer"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -7,6 +7,7 @@ export const subscriptions: Subscription[] = [
     category: "streaming",
     monthlyCost: 169,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "15. jul",
   },
   {
@@ -15,6 +16,7 @@ export const subscriptions: Subscription[] = [
     category: "streaming",
     monthlyCost: 129,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "3. jul",
   },
   {
@@ -23,6 +25,7 @@ export const subscriptions: Subscription[] = [
     category: "software",
     monthlyCost: 599,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "28. jun",
   },
   {
@@ -31,6 +34,7 @@ export const subscriptions: Subscription[] = [
     category: "software",
     monthlyCost: 79,
     status: "trial",
+    billingInterval: "monthly",
     nextPayment: "18. jun",
     note: "prøveperiode",
   },
@@ -40,6 +44,7 @@ export const subscriptions: Subscription[] = [
     category: "news",
     monthlyCost: 199,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "1. jul",
   },
   {
@@ -48,6 +53,7 @@ export const subscriptions: Subscription[] = [
     category: "health",
     monthlyCost: 399,
     status: "yearly",
+    billingInterval: "yearly",
     nextPayment: "Jan 2027",
   },
   {
@@ -56,6 +62,7 @@ export const subscriptions: Subscription[] = [
     category: "software",
     monthlyCost: 29,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "7. jul",
   },
   {
@@ -64,6 +71,7 @@ export const subscriptions: Subscription[] = [
     category: "streaming",
     monthlyCost: 109,
     status: "trial",
+    billingInterval: "monthly",
     nextPayment: "21. jun",
     note: "prøveperiode",
   },

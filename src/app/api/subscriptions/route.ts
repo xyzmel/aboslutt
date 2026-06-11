@@ -2,10 +2,11 @@ import { NextResponse } from "next/server";
 import { getCurrentAppUser } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
-import type { SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
+import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
 
 const allowedCategories: SubscriptionCategory[] = ["streaming", "software", "news", "health"];
 const allowedStatuses: SubscriptionStatus[] = ["active", "trial", "yearly", "cancelled"];
+const allowedBillingIntervals: BillingInterval[] = ["monthly", "yearly", "unknown"];
 
 const subscriptionSelect = {
   id: true,
@@ -14,10 +15,12 @@ const subscriptionSelect = {
   category: true,
   monthlyCost: true,
   status: true,
+  billingInterval: true,
   nextPayment: true,
   note: true,
   source: true,
   confidence: true,
+  createdAt: true,
 } as const;
 
 export async function GET() {
@@ -63,12 +66,17 @@ export async function POST(request: Request) {
   const monthlyCost = Number(payload.amount ?? payload.monthlyCost);
   const category = payload.category as SubscriptionCategory;
   const status = getStatusFromPayload(payload);
+  const billingInterval = getBillingIntervalFromPayload(payload, status);
 
   if (!requestedName || !nextPayment || !Number.isInteger(monthlyCost) || monthlyCost < 0) {
     return NextResponse.json({ error: "Ugyldig abonnement." }, { status: 400 });
   }
 
-  if (!allowedCategories.includes(category) || !allowedStatuses.includes(status)) {
+  if (
+    !allowedCategories.includes(category) ||
+    !allowedStatuses.includes(status) ||
+    !allowedBillingIntervals.includes(billingInterval)
+  ) {
     return NextResponse.json({ error: "Ugyldig kategori eller status." }, { status: 400 });
   }
 
@@ -98,6 +106,7 @@ export async function POST(request: Request) {
       category,
       monthlyCost,
       status,
+      billingInterval,
       nextPayment,
       note: note || null,
       source,
@@ -138,4 +147,24 @@ function getStatusFromPayload(payload: Record<string, unknown>): SubscriptionSta
   }
 
   return "active";
+}
+
+function getBillingIntervalFromPayload(
+  payload: Record<string, unknown>,
+  status: SubscriptionStatus,
+): BillingInterval {
+  if (typeof payload.billingInterval === "string") {
+    const billingInterval =
+      payload.billingInterval === "trial" ? "monthly" : (payload.billingInterval as BillingInterval);
+
+    if (allowedBillingIntervals.includes(billingInterval)) {
+      return billingInterval;
+    }
+  }
+
+  if (status === "yearly") {
+    return "yearly";
+  }
+
+  return "monthly";
 }

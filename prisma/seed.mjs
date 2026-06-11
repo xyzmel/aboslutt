@@ -8,6 +8,7 @@ const demoSubscriptions = [
     category: "streaming",
     monthlyCost: 169,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "15. jul",
   },
   {
@@ -15,6 +16,7 @@ const demoSubscriptions = [
     category: "streaming",
     monthlyCost: 129,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "3. jul",
   },
   {
@@ -22,6 +24,7 @@ const demoSubscriptions = [
     category: "software",
     monthlyCost: 599,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "28. jun",
   },
   {
@@ -29,6 +32,7 @@ const demoSubscriptions = [
     category: "software",
     monthlyCost: 79,
     status: "trial",
+    billingInterval: "monthly",
     nextPayment: "18. jun",
     note: "prøveperiode",
   },
@@ -37,6 +41,7 @@ const demoSubscriptions = [
     category: "news",
     monthlyCost: 199,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "1. jul",
   },
   {
@@ -44,6 +49,7 @@ const demoSubscriptions = [
     category: "health",
     monthlyCost: 399,
     status: "yearly",
+    billingInterval: "yearly",
     nextPayment: "Jan 2027",
   },
   {
@@ -51,6 +57,7 @@ const demoSubscriptions = [
     category: "software",
     monthlyCost: 29,
     status: "active",
+    billingInterval: "monthly",
     nextPayment: "7. jul",
   },
   {
@@ -58,6 +65,7 @@ const demoSubscriptions = [
     category: "streaming",
     monthlyCost: 109,
     status: "trial",
+    billingInterval: "monthly",
     nextPayment: "21. jun",
     note: "prøveperiode",
   },

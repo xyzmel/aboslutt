@@ -90,6 +90,7 @@ model Subscription {
   category    String
   monthlyCost Int
   status      String
+  billingInterval String @default("monthly")
   nextPayment String
   note        String?
   source      String?
@@ -103,4 +104,5 @@ model Subscription {
   @@index([normalizedName])
   @@index([category])
   @@index([status])
+  @@index([billingInterval])
 }

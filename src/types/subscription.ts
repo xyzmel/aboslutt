@@ -2,6 +2,8 @@ export type SubscriptionCategory = "streaming" | "software" | "news" | "health";
 
 export type SubscriptionStatus = "active" | "trial" | "yearly" | "cancelled";
 
+export type BillingInterval = "monthly" | "yearly" | "unknown";
+
 export type Subscription = {
   id: string;
   name: string;
@@ -9,8 +11,10 @@ export type Subscription = {
   category: SubscriptionCategory;
   monthlyCost: number;
   status: SubscriptionStatus;
+  billingInterval: BillingInterval;
   nextPayment: string;
   note?: string | null;
   source?: string | null;
   confidence?: number | null;
+  createdAt?: string;
 };

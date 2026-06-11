@@ -1,9 +1,18 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { signIn, useSession } from "next-auth/react";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
+import type { BillingInterval, SubscriptionCategory } from "@/types/subscription";
+
+type CandidateDraft = {
+  merchantName: string;
+  amount: string;
+  category: SubscriptionCategory;
+  billingInterval: BillingInterval;
+  nextPayment: string;
+};
 
 const categoryLabels: Record<EmailSubscriptionCandidate["category"], string> = {
   streaming: "Streaming",
@@ -31,6 +40,9 @@ export default function EmailImportPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailScopeConnected, setGmailScopeConnected] = useState(false);
+  const [editingCandidate, setEditingCandidate] = useState<EmailSubscriptionCandidate | null>(null);
+  const [candidateDraft, setCandidateDraft] = useState<CandidateDraft | null>(null);
+  const [isSavingCandidate, setIsSavingCandidate] = useState(false);
 
   useEffect(() => {
     if (status !== "authenticated") {
@@ -122,19 +134,47 @@ export default function EmailImportPage() {
     }
   }
 
-  async function saveCandidate(candidate: EmailSubscriptionCandidate) {
+  function startCandidateConfirmation(candidate: EmailSubscriptionCandidate) {
+    setEditingCandidate(candidate);
+    setCandidateDraft({
+      merchantName: candidate.merchantName,
+      amount: String(candidate.amount),
+      category: candidate.category,
+      billingInterval: candidate.billingInterval === "yearly" ? "yearly" : "monthly",
+      nextPayment: candidate.nextPayment,
+    });
+  }
+
+  async function saveCandidate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingCandidate || !candidateDraft) {
+      return;
+    }
+
     setErrorMessage(null);
     setSavedCandidateName(null);
+    setIsSavingCandidate(true);
 
     try {
       const response = await fetch("/api/subscriptions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...candidate,
-          name: candidate.merchantName,
-          monthlyCost: candidate.amount,
-          status: candidate.billingInterval === "trial" ? "trial" : "active",
+          ...editingCandidate,
+          merchantName: candidateDraft.merchantName,
+          name: candidateDraft.merchantName,
+          amount: Number(candidateDraft.amount),
+          monthlyCost: Number(candidateDraft.amount),
+          category: candidateDraft.category,
+          billingInterval: candidateDraft.billingInterval,
+          nextPayment: candidateDraft.nextPayment,
+          status:
+            editingCandidate.billingInterval === "trial"
+              ? "trial"
+              : candidateDraft.billingInterval === "yearly"
+                ? "yearly"
+                : "active",
         }),
       });
       const result = await response.json();
@@ -143,11 +183,15 @@ export default function EmailImportPage() {
         throw new Error(result.message ?? result.error ?? "Kunne ikke lagre abonnementet.");
       }
 
-      setSavedCandidateName(candidate.merchantName);
+      setSavedCandidateName(candidateDraft.merchantName);
       setEmailText("");
-      ignoreCandidate(candidate);
+      ignoreCandidate(editingCandidate);
+      setEditingCandidate(null);
+      setCandidateDraft(null);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Kunne ikke lagre abonnementet.");
+    } finally {
+      setIsSavingCandidate(false);
     }
   }
 
@@ -296,7 +340,7 @@ export default function EmailImportPage() {
           <CandidateGroup
             candidates={likelyCandidates}
             onIgnore={ignoreCandidate}
-            onSave={saveCandidate}
+            onSave={startCandidateConfirmation}
             title="Sannsynlige abonnementer"
           />
         ) : null}
@@ -305,8 +349,22 @@ export default function EmailImportPage() {
           <CandidateGroup
             candidates={possibleCandidates}
             onIgnore={ignoreCandidate}
-            onSave={saveCandidate}
+            onSave={startCandidateConfirmation}
             title="Mulige funn"
+          />
+        ) : null}
+
+        {editingCandidate && candidateDraft ? (
+          <CandidateConfirmationModal
+            candidate={editingCandidate}
+            draft={candidateDraft}
+            isSaving={isSavingCandidate}
+            onClose={() => {
+              setEditingCandidate(null);
+              setCandidateDraft(null);
+            }}
+            onSubmit={saveCandidate}
+            setDraft={setCandidateDraft}
           />
         ) : null}
       </section>
@@ -362,7 +420,7 @@ function CandidateGroup({
                   onClick={() => onSave(candidate)}
                   type="button"
                 >
-                  Bekreft og lagre
+                  Se og lagre
                 </button>
                 <button
                   className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
@@ -377,6 +435,146 @@ function CandidateGroup({
         ))}
       </div>
     </section>
+  );
+}
+
+function CandidateConfirmationModal({
+  candidate,
+  draft,
+  setDraft,
+  onClose,
+  onSubmit,
+  isSaving,
+}: {
+  candidate: EmailSubscriptionCandidate;
+  draft: CandidateDraft;
+  setDraft: Dispatch<SetStateAction<CandidateDraft | null>>;
+  onClose: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  isSaving: boolean;
+}) {
+  const amount = Number(draft.amount);
+  const showSuspiciousAmountWarning =
+    amount > 500 && ["monthly", "unknown"].includes(draft.billingInterval);
+
+  function updateDraft(update: Partial<CandidateDraft>) {
+    setDraft((currentDraft) => (currentDraft ? { ...currentDraft, ...update } : currentDraft));
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-[#0D1B2A]/50 p-4 sm:items-center sm:justify-center">
+      <form
+        className="w-full rounded-2xl bg-white p-5 shadow-2xl sm:max-w-2xl"
+        onSubmit={onSubmit}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight">Sjekk før du lagrer</h2>
+            <p className="mt-1 text-sm text-[#5F6F82]">
+              Gmail-funn kan være feil. Rett opp navn, pris og intervall før abonnementet lagres.
+            </p>
+          </div>
+          <button
+            className="rounded-full border border-[#DBE4EE] px-3 py-1.5 text-sm font-bold text-[#0D1B2A]"
+            onClick={onClose}
+            type="button"
+          >
+            Lukk
+          </button>
+        </div>
+
+        {showSuspiciousAmountWarning ? (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+            Beløpet virker høyt. Sjekk før du lagrer.
+          </div>
+        ) : null}
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <label className="text-sm font-semibold text-[#4A5568]">
+            Navn
+            <input
+              className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              onChange={(event) => updateDraft({ merchantName: event.target.value })}
+              required
+              value={draft.merchantName}
+            />
+          </label>
+          <label className="text-sm font-semibold text-[#4A5568]">
+            Kr/mnd
+            <input
+              className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              inputMode="numeric"
+              onChange={(event) => updateDraft({ amount: event.target.value })}
+              required
+              value={draft.amount}
+            />
+          </label>
+          <label className="text-sm font-semibold text-[#4A5568]">
+            Kategori
+            <select
+              className="mt-2 w-full rounded-xl border border-[#DBE4EE] bg-white px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              onChange={(event) =>
+                updateDraft({ category: event.target.value as SubscriptionCategory })
+              }
+              value={draft.category}
+            >
+              <option value="streaming">Streaming</option>
+              <option value="software">Programvare</option>
+              <option value="news">Nyheter</option>
+              <option value="health">Helse</option>
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-[#4A5568]">
+            Intervall
+            <select
+              className="mt-2 w-full rounded-xl border border-[#DBE4EE] bg-white px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              onChange={(event) =>
+                updateDraft({ billingInterval: event.target.value as BillingInterval })
+              }
+              value={draft.billingInterval}
+            >
+              <option value="monthly">Månedlig</option>
+              <option value="yearly">Årlig</option>
+              <option value="unknown">Ukjent</option>
+            </select>
+          </label>
+          <label className="text-sm font-semibold text-[#4A5568] sm:col-span-2">
+            Neste trekk
+            <input
+              className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+              onChange={(event) => updateDraft({ nextPayment: event.target.value })}
+              required
+              value={draft.nextPayment}
+            />
+          </label>
+        </div>
+
+        <div className="mt-5 rounded-xl bg-[#F7F9FC] p-4 text-sm text-[#5F6F82]">
+          <p className="font-bold text-[#0D1B2A]">Opprinnelig forslag</p>
+          <p className="mt-1">
+            {candidate.merchantName} · {candidate.amount} {candidate.currency} ·{" "}
+            {candidate.confidenceLabel} ({Math.round(candidate.confidence * 100)}%)
+          </p>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+          <button
+            className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+            onClick={onClose}
+            type="button"
+          >
+            Avbryt
+          </button>
+          <button
+            className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-50"
+            disabled={isSaving}
+            type="submit"
+          >
+            {isSaving ? "Lagrer..." : "Bekreft og lagre"}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 

@@ -61,9 +61,20 @@ Viktig: Etter bytte til `provider = "postgresql"` i `prisma/schema.prisma` skal 
 - `/` landingsside med valg av metode
 - `/login` e-post magic-link, Google/Gmail via importflyt og Vipps Login når konfigurert
 - `/register` opprett konto med e-post magic-link
-- `/dashboard` databasebasert abonnementoversikt med legg til, slett og vedvarende avslutning
+- `/dashboard` databasebasert abonnementoversikt med legg til, rediger, slett og vedvarende avslutning
+- `/subscriptions/[id]` detaljside for et abonnement med redigering, avslutning og sletting
 - `/import/email` lokal import fra Gmail-skanning eller innlimt kvitteringstekst
 - `/connect` placeholder for fremtidige koblinger
+
+## Subscription Management
+
+Aboslutt beta har manuell abonnementshåndtering som kjernefunksjon. Brukeren kan legge til, redigere, slette og markere abonnementer som avsluttet uten å koble til Gmail.
+
+Abonnementer har nå navn, månedlig kostnad, kategori, status, faktureringsintervall, neste trekk, notat, kilde og eventuell import-confidence. Faktureringsintervall lagres som `monthly`, `yearly` eller `unknown`, og vises i UI som `Månedlig`, `Årlig` eller `Ukjent`.
+
+Importkilder vises som brukervennlige merker som `Manuell`, `Gmail` eller `Google`, ikke rå verdier som `gmail_import`.
+
+Gmail- og e-postimport viser en bekreftelsesdialog før lagring. Brukeren kan rette leverandørnavn, beløp, kategori, faktureringsintervall og neste trekk. Hvis et importert månedlig eller ukjent beløp er over 500 NOK, vises varselet `Beløpet virker høyt. Sjekk før du lagrer.`
 
 ## Auth
 
