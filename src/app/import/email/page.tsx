@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
+import { formatNextPaymentDate, normalizeDateInputValue } from "@/lib/subscription-date";
 import type { BillingInterval, SubscriptionCategory } from "@/types/subscription";
 
 type CandidateDraft = {
@@ -148,7 +149,7 @@ export default function EmailImportPage() {
       amount: String(candidate.amount),
       category: candidate.category,
       billingInterval: candidate.billingInterval === "yearly" ? "yearly" : "monthly",
-      nextPayment: candidate.nextPayment,
+      nextPayment: normalizeDateInputValue(candidate.nextPayment),
     });
   }
 
@@ -414,7 +415,7 @@ function CandidateGroup({
                   {intervalLabels[candidate.billingInterval]}
                 </p>
                 <p className="mt-1 text-sm text-[#5F6F82]">
-                  Neste trekk: {candidate.nextPayment}
+                  Neste trekk: {formatNextPaymentDate(candidate.nextPayment)}
                 </p>
                 <ReasonList items={candidate.reasons} title="Hvorfor" />
                 {candidate.warnings.length > 0 ? (
@@ -550,7 +551,8 @@ function CandidateConfirmationModal({
             <input
               className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
               onChange={(event) => updateDraft({ nextPayment: event.target.value })}
-              required
+              placeholder="Velg dato"
+              type="date"
               value={draft.nextPayment}
             />
           </label>

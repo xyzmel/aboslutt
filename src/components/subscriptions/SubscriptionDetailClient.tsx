@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { formatNextPaymentDate, normalizeDateInputValue } from "@/lib/subscription-date";
 import type {
   BillingInterval,
   Subscription,
@@ -56,7 +57,7 @@ export function SubscriptionDetailClient({
     monthlyCost: String(initialSubscription.monthlyCost),
     status: initialSubscription.status,
     billingInterval: initialSubscription.billingInterval,
-    nextPayment: initialSubscription.nextPayment,
+    nextPayment: normalizeDateInputValue(initialSubscription.nextPayment),
     note: initialSubscription.note ?? "",
   });
 
@@ -215,7 +216,7 @@ export function SubscriptionDetailClient({
                 options={intervalOptions}
                 value={form.billingInterval}
               />
-              <TextInput
+              <DateInput
                 label="Neste trekk"
                 onChange={(value) => setForm((current) => ({ ...current, nextPayment: value }))}
                 value={form.nextPayment}
@@ -244,7 +245,7 @@ export function SubscriptionDetailClient({
               <DetailItem label="Kategori" value={getCategoryLabel(subscription.category)} />
               <DetailItem label="Status" value={getStatusLabel(subscription.status)} />
               <DetailItem label="Kilde" value={getSourceLabel(subscription.source)} />
-              <DetailItem label="Neste trekk" value={subscription.nextPayment} />
+              <DetailItem label="Neste trekk" value={formatNextPaymentDate(subscription.nextPayment)} />
               <DetailItem label="Intervall" value={getIntervalLabel(subscription.billingInterval)} />
               <DetailItem label="Notat" value={subscription.note || "Ingen notat"} />
               <DetailItem
@@ -291,6 +292,29 @@ function TextInput({
         inputMode={inputMode}
         onChange={(event) => onChange(event.target.value)}
         required
+        value={value}
+      />
+    </label>
+  );
+}
+
+function DateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm font-semibold text-[#4A5568]">
+      {label}
+      <input
+        className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Velg dato"
+        type="date"
         value={value}
       />
     </label>

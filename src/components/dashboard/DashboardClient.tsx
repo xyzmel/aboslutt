@@ -6,6 +6,12 @@ import { signOut, useSession } from "next-auth/react";
 import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellation";
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
+import {
+  formatShortPaymentDate,
+  normalizeDateInputValue,
+  parseNextPaymentDate,
+  startOfDay,
+} from "@/lib/subscription-date";
 import type {
   BillingInterval,
   Subscription,
@@ -217,7 +223,7 @@ export function DashboardClient() {
       monthlyCost: String(subscription.monthlyCost),
       status: subscription.status,
       billingInterval: subscription.billingInterval ?? "monthly",
-      nextPayment: subscription.nextPayment,
+      nextPayment: normalizeDateInputValue(subscription.nextPayment),
       note: subscription.note ?? "",
     });
   }
@@ -471,10 +477,9 @@ export function DashboardClient() {
                   options={[...billingIntervalOptions]}
                   value={form.billingInterval}
                 />
-                <TextInput
+                <DateInput
                   label="Neste trekk"
                   onChange={(value) => setForm((current) => ({ ...current, nextPayment: value }))}
-                  placeholder="12. aug"
                   value={form.nextPayment}
                 />
                 <TextInput
@@ -659,7 +664,7 @@ function UpcomingPayments({ subscriptions }: { subscriptions: UpcomingPayment[] 
                 <p className="font-black text-[#0D1B2A]">
                   {formatCurrency(getMonthlyEquivalent(subscription))} kr
                 </p>
-                <p className="mt-1 text-[#5F6F82]">{formatPaymentDate(paymentDate)}</p>
+                <p className="mt-1 text-[#5F6F82]">{formatShortPaymentDate(paymentDate)}</p>
               </div>
             </div>
           ))}
@@ -724,7 +729,7 @@ function getUpcomingPayments(subscriptions: Subscription[]): UpcomingPayment[] {
     .filter((subscription) => subscription.status !== "cancelled")
     .map((subscription) => ({
       subscription,
-      paymentDate: parsePaymentDate(subscription.nextPayment, today),
+      paymentDate: parseNextPaymentDate(subscription.nextPayment, today),
     }))
     .filter((payment): payment is UpcomingPayment => {
       const paymentDate = payment.paymentDate;
@@ -739,61 +744,6 @@ function getMonthlyEquivalent(subscription: Subscription) {
   }
 
   return subscription.monthlyCost;
-}
-
-function parsePaymentDate(value: string | null | undefined, today = startOfDay(new Date())) {
-  const trimmedValue = value?.trim();
-
-  if (!trimmedValue || /^ukjent$/i.test(trimmedValue)) {
-    return null;
-  }
-
-  const isoDate = new Date(trimmedValue);
-  if (!Number.isNaN(isoDate.getTime())) {
-    return startOfDay(isoDate);
-  }
-
-  const monthPattern = Object.keys(monthNumbers).join("|");
-  const dayMonthMatch = trimmedValue.match(
-    new RegExp(`(\\d{1,2})\\.?\\s*(${monthPattern})(?:\\s*(\\d{4}))?`, "i"),
-  );
-
-  if (dayMonthMatch) {
-    const day = Number(dayMonthMatch[1]);
-    const month = monthNumbers[dayMonthMatch[2].toLowerCase()];
-    const explicitYear = dayMonthMatch[3] ? Number(dayMonthMatch[3]) : null;
-    const year = explicitYear ?? today.getFullYear();
-    const paymentDate = startOfDay(new Date(year, month, day));
-
-    if (!explicitYear && paymentDate < today) {
-      paymentDate.setFullYear(paymentDate.getFullYear() + 1);
-    }
-
-    return paymentDate;
-  }
-
-  const monthYearMatch = trimmedValue.match(new RegExp(`(${monthPattern})\\s*(\\d{4})`, "i"));
-
-  if (monthYearMatch) {
-    return startOfDay(new Date(Number(monthYearMatch[2]), monthNumbers[monthYearMatch[1].toLowerCase()], 1));
-  }
-
-  return null;
-}
-
-function startOfDay(date: Date) {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function formatPaymentDate(date: Date | null) {
-  if (!date) {
-    return "Ukjent";
-  }
-
-  return new Intl.DateTimeFormat("nb-NO", {
-    day: "numeric",
-    month: "short",
-  }).format(date);
 }
 
 function formatCurrency(value: number) {
@@ -824,42 +774,6 @@ function getSourceLabel(source?: string | null) {
   return "Manuell";
 }
 
-const monthNumbers: Record<string, number> = {
-  jan: 0,
-  januar: 0,
-  january: 0,
-  feb: 1,
-  februar: 1,
-  february: 1,
-  mar: 2,
-  mars: 2,
-  march: 2,
-  apr: 3,
-  april: 3,
-  mai: 4,
-  may: 4,
-  jun: 5,
-  juni: 5,
-  june: 5,
-  jul: 6,
-  juli: 6,
-  july: 6,
-  aug: 7,
-  august: 7,
-  sep: 8,
-  september: 8,
-  okt: 9,
-  oktober: 9,
-  oct: 9,
-  october: 9,
-  nov: 10,
-  november: 10,
-  des: 11,
-  desember: 11,
-  dec: 11,
-  december: 11,
-};
-
 function TextInput({
   label,
   value,
@@ -882,6 +796,29 @@ function TextInput({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         required={label !== "Notat"}
+        value={value}
+      />
+    </label>
+  );
+}
+
+function DateInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="text-sm font-semibold text-[#4A5568] md:col-span-1">
+      {label}
+      <input
+        className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+        onChange={(event) => onChange(event.target.value)}
+        placeholder="Velg dato"
+        type="date"
         value={value}
       />
     </label>
@@ -990,10 +927,9 @@ function SubscriptionEditModal({
             options={[...billingIntervalOptions]}
             value={form.billingInterval}
           />
-          <TextInput
+          <DateInput
             label="Neste trekk"
             onChange={(value) => setForm((current) => ({ ...current, nextPayment: value }))}
-            placeholder="12. aug"
             value={form.nextPayment}
           />
           <label className="text-sm font-semibold text-[#4A5568] sm:col-span-2">

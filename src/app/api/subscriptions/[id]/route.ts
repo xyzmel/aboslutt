@@ -58,13 +58,13 @@ export async function PATCH(request: Request, context: RouteContext) {
   const payload = await request.json();
   const data: {
     name?: string;
+    normalizedName?: string | null;
     category?: SubscriptionCategory;
     monthlyCost?: number;
     status?: SubscriptionStatus;
     billingInterval?: BillingInterval;
     nextPayment?: string;
     note?: string | null;
-    normalizedName?: string | null;
   } = {};
 
   if (typeof payload.name === "string") {
@@ -72,6 +72,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     if (!name) {
       return NextResponse.json({ error: "Navn kan ikke være tomt." }, { status: 400 });
     }
+
     const normalizedName = normalizeMerchantName(name);
     data.name = normalizedName;
     data.normalizedName = normalizeMerchantKey(normalizedName);
@@ -110,11 +111,7 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (typeof payload.nextPayment === "string") {
-    const nextPayment = payload.nextPayment.trim();
-    if (!nextPayment) {
-      return NextResponse.json({ error: "Neste trekk kan ikke være tomt." }, { status: 400 });
-    }
-    data.nextPayment = nextPayment;
+    data.nextPayment = payload.nextPayment.trim();
   }
 
   if (payload.note !== undefined) {

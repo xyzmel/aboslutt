@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatNextPaymentDate } from "@/lib/subscription-date";
 import type { Subscription } from "@/types/subscription";
 
 type SubscriptionCardProps = {
@@ -83,7 +84,7 @@ export function SubscriptionCard({
         </div>
         <div className="text-sm leading-5 text-[#5F6F82] sm:text-right">
           <p className="font-semibold text-[#4A5568]">Neste trekk</p>
-          <p>{formatNextPayment(subscription.nextPayment)}</p>
+          <p>{formatNextPaymentDate(subscription.nextPayment)}</p>
         </div>
       </div>
 
@@ -104,7 +105,7 @@ export function SubscriptionCard({
           onClick={() => onToggle(subscription.id)}
           type="button"
         >
-          {isSelected ? "Vurderes" : isCancelled ? "Avsluttet" : "Vurder"}
+          {isSelected ? "Valgt for sparing" : isCancelled ? "Avsluttet" : "Vurder"}
         </button>
         <button
           className="rounded-xl border border-[#DBE4EE] px-4 py-2.5 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
@@ -164,24 +165,4 @@ function getSourceBadge(source?: string | null) {
     label: "Manuell",
     className: "bg-emerald-50 text-emerald-700",
   };
-}
-
-function formatNextPayment(value?: string | null) {
-  const trimmedValue = value?.trim();
-
-  if (!trimmedValue) {
-    return "Ukjent";
-  }
-
-  const date = new Date(trimmedValue);
-
-  if (!Number.isNaN(date.getTime())) {
-    return new Intl.DateTimeFormat("nb-NO", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
-  }
-
-  return trimmedValue;
 }

@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   const status = getStatusFromPayload(payload);
   const billingInterval = getBillingIntervalFromPayload(payload, status);
 
-  if (!requestedName || !nextPayment || !Number.isInteger(monthlyCost) || monthlyCost < 0) {
+  if (!requestedName || !Number.isInteger(monthlyCost) || monthlyCost < 0) {
     return NextResponse.json({ error: "Ugyldig abonnement." }, { status: 400 });
   }
 
