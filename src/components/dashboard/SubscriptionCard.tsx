@@ -44,7 +44,7 @@ export function SubscriptionCard({
     <article
       className={`rounded-2xl border bg-white p-5 text-left shadow-sm transition ${
         isSelected
-          ? "border-[#C8102E] ring-2 ring-[#C8102E]/15"
+          ? "border-[#C8102E]/50 bg-[#FFF8F9] ring-1 ring-[#C8102E]/10"
           : "border-[#DBE4EE] hover:border-[#C8102E]/40"
       } ${isCancelled ? "opacity-70" : ""}`}
     >

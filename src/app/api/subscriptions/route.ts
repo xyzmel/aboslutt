@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
+import {
+  isValidSubscriptionDateInput,
+  normalizeNextPaymentDate,
+} from "@/lib/subscription-dates";
 import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
 
 const allowedCategories: SubscriptionCategory[] = ["streaming", "software", "news", "health"];
@@ -36,7 +40,9 @@ export async function GET() {
     select: subscriptionSelect,
   });
 
-  return NextResponse.json(subscriptions);
+  const normalizedSubscriptions = await rolloverSubscriptions(subscriptions);
+
+  return NextResponse.json(normalizedSubscriptions);
 }
 
 export async function POST(request: Request) {
@@ -80,6 +86,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Ugyldig kategori eller status." }, { status: 400 });
   }
 
+  if (!isValidSubscriptionDateInput(nextPayment)) {
+    return NextResponse.json(
+      { error: "Ugyldig dato.", message: "Neste trekk må være tom eller en gyldig dato." },
+      { status: 400 },
+    );
+  }
+
   const duplicateSubscription = await prisma.subscription.findFirst({
     where: {
       userId: currentUser.id,
@@ -107,7 +120,7 @@ export async function POST(request: Request) {
       monthlyCost,
       status,
       billingInterval,
-      nextPayment,
+      nextPayment: normalizeNextPaymentDate({ nextPayment, billingInterval, status }),
       note: note || null,
       source,
       confidence,
@@ -167,4 +180,39 @@ function getBillingIntervalFromPayload(
   }
 
   return "monthly";
+}
+
+async function rolloverSubscriptions<T extends { id: string; nextPayment: string; billingInterval: string; status: string }>(
+  subscriptions: T[],
+) {
+  return Promise.all(
+    subscriptions.map(async (subscription) => {
+      if (
+        subscription.status === "cancelled" ||
+        !["monthly", "yearly"].includes(subscription.billingInterval)
+      ) {
+        return subscription;
+      }
+
+      const normalizedNextPayment = normalizeNextPaymentDate({
+        nextPayment: subscription.nextPayment,
+        billingInterval: subscription.billingInterval as BillingInterval,
+        status: subscription.status,
+      });
+
+      if (!normalizedNextPayment || normalizedNextPayment === subscription.nextPayment) {
+        return subscription;
+      }
+
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: { nextPayment: normalizedNextPayment },
+      });
+
+      return {
+        ...subscription,
+        nextPayment: normalizedNextPayment,
+      };
+    }),
+  );
 }

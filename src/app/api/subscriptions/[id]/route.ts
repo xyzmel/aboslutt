@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
 import { prisma } from "@/lib/prisma";
+import {
+  isValidSubscriptionDateInput,
+  normalizeNextPaymentDate,
+} from "@/lib/subscription-dates";
 import type { BillingInterval, SubscriptionCategory, SubscriptionStatus } from "@/types/subscription";
 
 type RouteContext = {
@@ -44,7 +48,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Fant ikke abonnementet." }, { status: 404 });
   }
 
-  return NextResponse.json(subscription);
+  return NextResponse.json(await rolloverSubscription(subscription));
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -111,7 +115,14 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   if (typeof payload.nextPayment === "string") {
-    data.nextPayment = payload.nextPayment.trim();
+    const nextPayment = payload.nextPayment.trim();
+    if (!isValidSubscriptionDateInput(nextPayment)) {
+      return NextResponse.json(
+        { error: "Ugyldig dato.", message: "Neste trekk må være tom eller en gyldig dato." },
+        { status: 400 },
+      );
+    }
+    data.nextPayment = nextPayment;
   }
 
   if (payload.note !== undefined) {
@@ -132,7 +143,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     select: subscriptionSelect,
   });
 
-  return NextResponse.json(subscription);
+  return NextResponse.json(await rolloverSubscription(subscription));
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {
@@ -152,4 +163,35 @@ export async function DELETE(_request: Request, context: RouteContext) {
   }
 
   return NextResponse.json({ ok: true });
+}
+
+async function rolloverSubscription<T extends { id: string; nextPayment: string; billingInterval: string; status: string }>(
+  subscription: T,
+) {
+  if (
+    subscription.status === "cancelled" ||
+    !["monthly", "yearly"].includes(subscription.billingInterval)
+  ) {
+    return subscription;
+  }
+
+  const normalizedNextPayment = normalizeNextPaymentDate({
+    nextPayment: subscription.nextPayment,
+    billingInterval: subscription.billingInterval as BillingInterval,
+    status: subscription.status,
+  });
+
+  if (!normalizedNextPayment || normalizedNextPayment === subscription.nextPayment) {
+    return subscription;
+  }
+
+  await prisma.subscription.update({
+    where: { id: subscription.id },
+    data: { nextPayment: normalizedNextPayment },
+  });
+
+  return {
+    ...subscription,
+    nextPayment: normalizedNextPayment,
+  };
 }

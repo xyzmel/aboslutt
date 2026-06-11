@@ -313,10 +313,10 @@ function DateInput({
       <input
         className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Velg dato"
         type="date"
         value={value}
       />
+      <span className="mt-1 block text-xs font-medium text-[#5F6F82]">Valgfritt</span>
     </label>
   );
 }

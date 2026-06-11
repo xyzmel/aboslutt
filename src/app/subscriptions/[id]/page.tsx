@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { SubscriptionDetailClient } from "@/components/subscriptions/SubscriptionDetailClient";
 import { getCurrentAppUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { normalizeNextPaymentDate } from "@/lib/subscription-dates";
 
 type SubscriptionDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -37,10 +38,31 @@ export default async function SubscriptionDetailPage({ params }: SubscriptionDet
     notFound();
   }
 
+  let nextPayment = subscription.nextPayment;
+  const normalizedNextPayment = normalizeNextPaymentDate({
+    nextPayment: subscription.nextPayment,
+    billingInterval: subscription.billingInterval as "monthly" | "yearly" | "unknown",
+    status: subscription.status,
+  });
+
+  if (
+    subscription.status !== "cancelled" &&
+    ["monthly", "yearly"].includes(subscription.billingInterval) &&
+    normalizedNextPayment &&
+    normalizedNextPayment !== subscription.nextPayment
+  ) {
+    await prisma.subscription.update({
+      where: { id: subscription.id },
+      data: { nextPayment: normalizedNextPayment },
+    });
+    nextPayment = normalizedNextPayment;
+  }
+
   return (
     <SubscriptionDetailClient
       initialSubscription={{
         ...subscription,
+        nextPayment,
         category: subscription.category as "streaming" | "software" | "news" | "health",
         status: subscription.status as "active" | "trial" | "yearly" | "cancelled",
         billingInterval: subscription.billingInterval as "monthly" | "yearly" | "unknown",

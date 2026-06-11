@@ -7,11 +7,11 @@ import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellati
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
 import {
-  formatShortPaymentDate,
+  formatDateForShortDisplay,
   normalizeDateInputValue,
   parseNextPaymentDate,
   startOfDay,
-} from "@/lib/subscription-date";
+} from "@/lib/subscription-dates";
 import type {
   BillingInterval,
   Subscription,
@@ -664,7 +664,7 @@ function UpcomingPayments({ subscriptions }: { subscriptions: UpcomingPayment[] 
                 <p className="font-black text-[#0D1B2A]">
                   {formatCurrency(getMonthlyEquivalent(subscription))} kr
                 </p>
-                <p className="mt-1 text-[#5F6F82]">{formatShortPaymentDate(paymentDate)}</p>
+                <p className="mt-1 text-[#5F6F82]">{formatDateForShortDisplay(paymentDate)}</p>
               </div>
             </div>
           ))}
@@ -700,7 +700,7 @@ function SavingsInsight({
         <p className="mt-2 text-sm text-white/65">
           {selectedCount > 0
             ? `${selectedCount} abonnementer vurderes avsluttet.`
-            : "Ingen abonnementer er valgt ennå."}
+            : "Velg abonnementer du vurderer å avslutte for å se potensiell sparing."}
         </p>
       </div>
       {trialCount > 0 ? (
@@ -726,10 +726,10 @@ function getUpcomingPayments(subscriptions: Subscription[]): UpcomingPayment[] {
   thirtyDaysFromNow.setDate(today.getDate() + 30);
 
   return subscriptions
-    .filter((subscription) => subscription.status !== "cancelled")
+    .filter((subscription) => ["active", "trial", "yearly"].includes(subscription.status))
     .map((subscription) => ({
       subscription,
-      paymentDate: parseNextPaymentDate(subscription.nextPayment, today),
+      paymentDate: parseNextPaymentDate(subscription.nextPayment),
     }))
     .filter((payment): payment is UpcomingPayment => {
       const paymentDate = payment.paymentDate;
@@ -817,10 +817,10 @@ function DateInput({
       <input
         className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Velg dato"
         type="date"
         value={value}
       />
+      <span className="mt-1 block text-xs font-medium text-[#5F6F82]">Valgfritt</span>
     </label>
   );
 }
