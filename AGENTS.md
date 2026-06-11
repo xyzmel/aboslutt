@@ -1,229 +1,261 @@
-# AGENTS.md — Aboslutt MVP
+Polish Aboslutt landing page, dashboard, and login/register UX for beta launch.
 
-## Project goal
+Current status:
+- App is live on https://www.aboslutt.no.
+- Neon Postgres works.
+- Email magic-link login works.
+- Google OAuth/Gmail works.
+- Vipps Login is ordered/pending credentials.
+- Dashboard works, but the UI still feels unfinished.
+- We want the app to feel like a real beta SaaS.
 
-Aboslutt is a Norwegian subscription overview and cancellation-helper MVP.
+Goal:
+Make the public landing page, login/register flow, and subscription dashboard more polished and beta-ready.
 
-The product helps users:
+Important:
+- Keep existing functionality working.
+- Do not break Google login, email magic link, Gmail import, dashboard CRUD, settings, onboarding or health route.
+- Do not hardcode secrets.
+- Do not commit .env or .env.local.
+- Keep Norwegian UI copy.
+- Use Aboslutt consistently, not Avoslutt.
+- Use the existing brand style:
+  - dark navy header/background
+  - red accent
+  - clean white cards
+  - rounded corners
+  - modern SaaS look
 
-* Log in securely
-* Connect Gmail with read-only access
-* Automatically scan for likely subscriptions
-* Review and confirm subscription candidates
-* Track active subscriptions
-* Add/delete/cancel subscriptions locally
-* Later connect Open Banking through an aggregator such as Neonomics
+Product positioning:
+- Everyone can manually add and track their existing subscriptions.
+- Automatic subscription scanning from Gmail/email is a SaaS feature.
+- For beta, automatic scanning may be available for selected users/testers.
+- Do not make it sound like users must connect Gmail to use the app.
+- Make it clear that manual overview works without Gmail.
 
-## Current stack
+Part 1 — Landing page polish:
 
-* Next.js App Router
-* TypeScript
-* Tailwind CSS
-* Prisma
-* SQLite for local development
-* Auth.js/NextAuth
-* Prisma adapter
-* Google OAuth with Gmail read-only
-* Email magic-link provider exists but SMTP may not be configured
-* Vipps Login placeholder
-* Norwegian UI copy
+Improve the public landing page `/`.
 
-## Current working features
+Make it feel like a real beta product.
 
-* Google OAuth works
-* Gmail read-only scan works
-* Gmail scan can find real subscriptions, for example HBO Max
-* Database-backed dashboard works
-* Add subscription works
-* Delete subscription works
-* Cancellation status persists
-* Subscription routes are user-scoped
+Sections:
+1. Hero:
+   - Headline: “Få kontroll på abonnementene dine”
+   - Subtext explaining that Aboslutt helps users track, organize and manage subscriptions.
+   - Mention that users can add subscriptions manually, and that automatic scanning is available as a smarter SaaS feature.
+   - Primary CTA: “Start gratis beta”
+   - Secondary CTA: “Logg inn”
+   - Mention: “Legg inn abonnementer manuelt — eller bruk automatisk skanning når det er tilgjengelig.”
 
-## Current routes
+2. How it works:
+   - “Legg til abonnementer manuelt”
+   - “Få oversikt over månedlige kostnader”
+   - “Skann kvitteringer automatisk”
+   - “Bekreft funn før de lagres”
+   - Explain that automatic scanning is optional and that users confirm candidates before saving.
 
-* `/`
-* `/login`
-* `/dashboard`
-* `/import/email`
-* `/connect`
-* `/connect/bank` may be added later
+3. Feature section:
+   Include two clear tracks:
+   - Manuell oversikt:
+     - available for all users
+     - add existing subscriptions
+     - track price, category, status and next billing date
+   - Automatisk skanning:
+     - SaaS feature
+     - scans Gmail/email receipts with read-only access
+     - suggests possible subscriptions
+     - user confirms before saving
 
-## Current API
+4. Trust/privacy section:
+   - Manual use does not require Gmail.
+   - Gmail scanning uses read-only access.
+   - Raw email content is not stored.
+   - User confirms what gets saved.
+   - User can delete subscriptions/account data in settings.
 
-* `GET /api/subscriptions`
-* `POST /api/subscriptions`
-* `PATCH /api/subscriptions/[id]`
-* `DELETE /api/subscriptions/[id]`
-* `POST /api/import/email`
-* `POST /api/import/gmail`
+5. Beta/pricing section:
+   - “Gratis i beta”
+   - Manual tracking available in beta.
+   - Automatic scanning is a SaaS feature and may be limited during beta.
+   - Future pricing coming later.
 
-## Current priority
+6. Company footer:
+   - Melby Solutions
+   - Org.nr. 925 919 020
+   - contact email
+   - links to privacy, terms, contact
 
-Improve Gmail subscription detection quality.
+Part 2 — Login/register polish:
 
-The Gmail scan currently works, but it can return noisy or duplicate candidates such as:
+Improve `/login` and `/register`.
 
-* Generic Google Commerce Limited
-* Google Play purchases without real product name
-* Duplicate HBO Max / Max candidates
-* One-time purchases incorrectly treated as subscriptions
-* Weak low-confidence candidates
+Goal:
+Clear auth options:
+- Continue with Google
+- Continue with Vipps
+- Continue with email
 
-The next task should improve:
+Use Norwegian button text:
+- “Fortsett med Google”
+- “Fortsett med Vipps”
+- “Fortsett med e-post”
 
-* candidate scoring
-* merchant normalization
-* duplicate merging
-* false-positive filtering
-* UI explanations
-* duplicate prevention before saving
+Google:
+- Add a small Google “G” icon/logo in the button.
+- Use a simple inline SVG or local asset.
+- Do not use a random external image URL.
 
-## Important privacy rules
+Vipps:
+- Add a Vipps-styled button.
+- If real Vipps provider is not configured, show the button disabled or with text:
+  “Vipps Login kommer snart”
+- If Vipps provider is configured, button should call signIn("vipps").
+- Add a small Vipps-like label/icon if no official asset exists.
+- Do not hardcode Vipps credentials.
 
-* Use Gmail read-only access only.
-* Do not request Gmail modify, delete, or send scopes.
-* Do not store raw email bodies by default.
-* Store only parsed subscription metadata after user confirmation.
-* Do not log access tokens, refresh tokens, ID tokens, raw Gmail messages, or full email bodies.
-* If debugging is needed, log only safe metadata such as candidate count or normalized merchant names.
+Email:
+- Keep email magic-link form.
+- Use clear text:
+  “Vi sender deg en sikker innloggingslenke. Ingen passord trengs.”
+- On success:
+  “Sjekk e-posten din for innloggingslenken.”
+- On SMTP missing:
+  “E-postinnlogging er ikke konfigurert enda.”
 
-## Gmail detection rules
+Register:
+- `/register` should look like a proper signup page.
+- Use same auth options.
+- Text should say “Opprett konto”.
+- Explain that account is created automatically when the user logs in through email/Google/Vipps.
+- Explain that users can start by adding subscriptions manually without connecting Gmail.
+- Link between `/login` and `/register`.
 
-Candidates should include:
+Part 3 — Dashboard polish:
 
-* merchantName
-* amount
-* currency
-* billingInterval
-* category
-* confidence
-* confidenceLabel
-* reasons
-* warnings
-* source
+Improve dashboard visual polish and subscription overview.
 
-Preferred source value for Gmail candidates:
+Keep current add/delete/cancel functionality.
 
-* `gmail_import`
+Improvements:
+1. Header:
+   - Better spacing and active nav.
+   - Add links:
+     - Oversikt
+     - Importer e-post
+     - Innstillinger
+   - Show user name/avatar initials.
+   - Logout visible but not too prominent.
 
-Confidence labels:
+2. Summary cards:
+   - “Totalt per måned”
+   - “Aktive abonnementer”
+   - “Avsluttede”
+   - “Mulige funn” if useful
+   - Make cards more polished and consistent.
 
-* `høy`
-* `middels`
-* `lav`
+3. Subscription cards:
+   - Make amount, status, source and next billing date clearer.
+   - Source badge:
+     - Gmail
+     - Manuell
+     - Vipps later
+   - Status badge:
+     - Aktiv
+     - Avsluttet
+     - Prøveperiode
+   - If amount confidence is low or imported from Gmail, optionally show:
+     “Bekreftet av bruker” or “Importert fra Gmail”
+   - Keep delete button less visually dominant.
+   - Keep cancel/selected flow.
 
-Show candidates grouped as:
+4. Fix current awkward data display:
+   - “Importert fra gmail_import” should display as “Importert fra Gmail”.
+   - Avoid showing raw source values to users.
+   - If next billing date is unknown, show “Ukjent” cleanly.
+   - If amount looks suspicious, do not auto-highlight it as perfect. Keep UI honest.
 
-* Sannsynlige abonnementer
-* Mulige funn
+5. Empty state:
+   - If no subscriptions:
+     - “Du har ingen abonnementer enda”
+     - CTA: “Legg til manuelt”
+     - CTA: “Skann Gmail”
+     - CTA: “Se hvordan det fungerer”
+   - Make manual adding the first/default option.
+   - Mention automatic scanning as optional.
 
-Hide very weak candidates by default.
+Part 4 — Onboarding polish:
 
-## Known merchant normalization examples
+Update `/onboarding`.
 
-Normalize:
+Make it clear:
+- Manual tracking is the fastest way to get started.
+- Gmail scanning is optional and works as an automatic SaaS feature.
+- User can add subscriptions manually first, then connect Gmail later.
 
-* HBO Max, Max -> HBO Max
-* Netflix -> Netflix
-* Spotify -> Spotify
-* Adobe -> Adobe
-* Apple, Apple Services, iCloud -> iCloud+ or Apple Services
-* Google Commerce Limited, Google Play -> try to extract product name
-* YouTube -> YouTube Premium
-* Microsoft -> Microsoft 365 or Microsoft
-* Disney -> Disney+
-* Viaplay -> Viaplay
-* TV 2 Play -> TV 2 Play
-* SATS -> SATS
-* Storytel -> Storytel
-* Duolingo -> Duolingo Plus
+Onboarding CTAs:
+- Primary: “Legg til abonnement manuelt”
+- Secondary: “Skann Gmail”
+- Tertiary: “Gå til oversikt”
 
-Avoid saving raw names like:
+Part 5 — App copy consistency:
 
-* Google Commerce Limited på Google Play
-* Google Commerce Limited
-* Google Play
+Search for inconsistent product names:
+- Avoslutt
+- Aboslutt
+- avoslutt
+- aboslutt
 
-unless no better product name can be found.
+Use “Aboslutt” everywhere visible in the UI and README unless it is a URL/package name.
 
-## Open Banking direction
+Part 6 — Logos/assets:
 
-The user has contacted Neonomics.
+Add local reusable icon components or assets:
+- GoogleIcon
+- VippsIconPlaceholder or VippsLogo if an existing local asset is provided
 
-Do not implement real Neonomics yet unless specifically asked.
+Do not use remote image URLs.
+Do not add large asset packages.
 
-When Open Banking work starts:
+Part 7 — README update:
 
-* build provider abstraction first
-* do not hardcode credentials
-* do not store raw bank transactions by default
-* BankID/SCA is handled by the bank/aggregator flow, not directly by Aboslutt
+Update README with:
+- beta status
+- manual subscription tracking available for all users
+- automatic Gmail/email scanning as a SaaS feature
+- auth options
+- Google/Gmail read-only
+- Vipps pending
+- email magic-link
+- production deploy command
+- how to test login/register/dashboard
 
-## Important rules
+Part 8 — Checks:
 
-* Keep the app simple and beginner-friendly.
-* Use meaningful variable names.
-* Use TypeScript.
-* Use Tailwind for styling.
-* Keep Norwegian UI copy.
-* Keep the existing visual style:
-
-  * navy: `#0D1B2A`
-  * red: `#C8102E`
-  * background: `#F0F4F8`
-* Do not add real BankID yet.
-* Do not add real Open Banking yet.
-* Do not add Outlook OAuth yet.
-* Do not add real provider cancellation automation yet.
-* Do not hardcode secrets.
-* Do not overwrite `.env.local`.
-* Do not break existing Gmail login/import.
-* Do not break existing dashboard subscription CRUD.
-
-## Environment variables
-
-```env
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=replace-me
-DATABASE_URL="file:./dev.db"
-
-EMAIL_SERVER_HOST=
-EMAIL_SERVER_PORT=587
-EMAIL_SERVER_USER=
-EMAIL_SERVER_PASSWORD=
-EMAIL_FROM="Aboslutt <no-reply@aboslutt.local>"
-
-GOOGLE_CLIENT_ID=replace-me
-GOOGLE_CLIENT_SECRET=replace-me
-
-VIPPS_CLIENT_ID=
-VIPPS_CLIENT_SECRET=
-VIPPS_WELL_KNOWN_URL=
-```
-
-## Quality commands
-
-Before finishing a task, run:
-
-```bash
+Run:
 npm run lint
 npm run build
-```
 
-If Prisma schema changes, also run:
+Acceptance criteria:
+- Landing page looks beta-ready.
+- Landing page clearly says manual subscription tracking is available without Gmail.
+- Landing page positions automatic Gmail/email scanning as optional SaaS feature.
+- /login has polished auth options with Google, Vipps and email.
+- /register exists and looks polished.
+- Vipps button handles both configured and not-configured states.
+- Dashboard cards look more production-ready.
+- Manual add is clearly available to every user.
+- Raw source values like gmail_import are not shown to users.
+- Product name is consistently Aboslutt in visible UI.
+- Google/Gmail flow still works.
+- Email magic-link still works.
+- Dashboard CRUD still works.
+- Settings/onboarding still work.
+- npm run lint passes.
+- npm run build passes.
 
-```bash
-npm run prisma:generate
-npm run prisma:migrate
-```
-
-## Done means
-
-Before finishing a task:
-
-* Run lint
-* Run build
-* Fix errors
-* Summarize files changed
-* Summarize commands run
-* Mention remaining TODOs
+Final summary:
+- files changed
+- commands run
+- what to test on production
+- remaining TODOs

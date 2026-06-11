@@ -25,32 +25,33 @@ export default async function OnboardingPage() {
       <section className="mx-auto max-w-5xl px-5 py-10">
         <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Kom i gang</p>
         <h1 className="mt-2 max-w-2xl text-4xl font-extrabold tracking-tight">
-          Finn dine første abonnementer
+          Start med abonnementene du allerede kjenner
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-[#5F6F82]">
-          Aboslutt kan koble til Gmail med read-only tilgang, skanne sannsynlige
-          kvitteringer og foreslå abonnementer. Du bekrefter alltid kandidatene
-          før de lagres, og rå e-postinnhold lagres ikke.
+          Du trenger ikke koble til Gmail for å bruke Aboslutt. Legg inn
+          abonnementene dine manuelt først, og bruk Gmail-skanning senere hvis du
+          vil la Aboslutt foreslå flere kandidater automatisk.
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           <OnboardingCard
-            action="Koble til Gmail"
-            description="Logg inn med Google og gi Gmail read-only tilgang for skanning."
-            href="/import/email"
-            title="1. Koble til"
-          />
-          <OnboardingCard
-            action="Importer e-post"
-            description="Lim inn en kvittering eller videresendt e-post hvis du vil teste manuelt."
-            href="/import/email"
-            title="2. Skann eller lim inn"
-          />
-          <OnboardingCard
             action="Legg til manuelt"
-            description="Gå til dashboardet etter at du har lagt inn eller importert første abonnement."
+            description="Registrer navn, pris og neste trekk for abonnementene du vet om."
             href="/dashboard?start=manual"
-            title="3. Bygg oversikten"
+            recommended
+            title="1. Legg inn manuelt"
+          />
+          <OnboardingCard
+            action="Skann Gmail"
+            description="Valgfritt: bruk Gmail read-only for å finne kvitteringer og mulige abonnementer."
+            href="/import/email"
+            title="2. Finn flere automatisk"
+          />
+          <OnboardingCard
+            action="Se hvordan det fungerer"
+            description="Gå til oversikten, velg abonnementer og marker dem som avsluttet i Aboslutt."
+            href="/dashboard?start=manual"
+            title="3. Følg opp"
           />
         </div>
       </section>
@@ -63,18 +64,33 @@ function OnboardingCard({
   description,
   action,
   href,
+  recommended = false,
 }: {
   title: string;
   description: string;
   action: string;
   href: string;
+  recommended?: boolean;
 }) {
   return (
-    <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
-      <h2 className="text-lg font-extrabold tracking-tight">{title}</h2>
+    <article
+      className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ${
+        recommended ? "ring-[#C8102E]/40" : "ring-[#DBE4EE]"
+      }`}
+    >
+      {recommended ? (
+        <span className="rounded-full bg-[#F5E6E9] px-3 py-1 text-xs font-bold text-[#C8102E]">
+          Anbefalt start
+        </span>
+      ) : null}
+      <h2 className="mt-3 text-lg font-extrabold tracking-tight">{title}</h2>
       <p className="mt-3 text-sm leading-6 text-[#5F6F82]">{description}</p>
       <Link
-        className="mt-5 inline-flex rounded-xl bg-[#C8102E] px-4 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+        className={`mt-5 inline-flex rounded-xl px-4 py-3 text-sm font-bold ${
+          recommended
+            ? "bg-[#C8102E] text-white hover:bg-[#a90d27]"
+            : "border border-[#DBE4EE] text-[#0D1B2A] hover:border-[#C8102E]/50"
+        }`}
         href={href}
       >
         {action}

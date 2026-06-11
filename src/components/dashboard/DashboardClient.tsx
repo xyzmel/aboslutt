@@ -306,6 +306,7 @@ export function DashboardClient() {
 
             <form
               className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]"
+              id="manual-add"
               onSubmit={addSubscription}
             >
               <h2 className="text-lg font-extrabold tracking-tight">Legg til abonnement</h2>
@@ -414,21 +415,27 @@ export function DashboardClient() {
                   Ingen abonnementer ennå
                 </h2>
                 <p className="mx-auto mt-2 max-w-xl">
-                  Skann Gmail, lim inn en kvittering eller legg til et abonnement manuelt
-                  med skjemaet over.
+                  Start med å legge inn abonnementene du allerede kjenner. Gmail-skanning
+                  er valgfritt når du vil finne flere automatisk.
                 </p>
                 <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
-                  <Link
+                  <a
                     className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+                    href="#manual-add"
+                  >
+                    Legg til manuelt
+                  </a>
+                  <Link
+                    className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
                     href="/import/email"
                   >
-                    Importer fra Gmail
+                    Skann Gmail
                   </Link>
                   <Link
                     className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
                     href="/onboarding"
                   >
-                    Se onboarding
+                    Se hvordan det fungerer
                   </Link>
                 </div>
               </div>

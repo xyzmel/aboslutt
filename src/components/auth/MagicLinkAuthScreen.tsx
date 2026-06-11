@@ -17,11 +17,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [smtpConfigured, setSmtpConfigured] = useState(false);
   const [betaSignupsEnabled, setBetaSignupsEnabled] = useState(true);
-  const [providers, setProviders] = useState({
-    google: false,
-    vipps: false,
-    email: false,
-  });
+  const [providers, setProviders] = useState({ google: false, vipps: false, email: false });
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +96,6 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
 
   const isRegister = mode === "register";
   const title = isRegister ? "Opprett konto" : "Logg inn";
-  const submitText = isRegister ? "Opprett konto" : "Send innloggingslenke";
   const canUseEmail = smtpConfigured && providers.email && (!isRegister || betaSignupsEnabled);
 
   return (
@@ -111,29 +106,64 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
         </Link>
 
         <div className="rounded-[1.25rem] bg-white p-7 shadow-2xl shadow-black/20 sm:p-9">
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5E6E9] text-lg font-extrabold text-[#C8102E]">
-            A
+          <div className="mb-5 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5E6E9] text-lg font-extrabold text-[#C8102E]">
+              A
+            </div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">Aboslutt</p>
+              <h1 className="text-2xl font-bold tracking-tight text-[#0D1B2A]">{title}</h1>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#0D1B2A]">{title}</h1>
-          <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
+          <p className="text-sm leading-6 text-[#5F6F82]">
             {isRegister
-              ? "Vi sender deg en sikker innloggingslenke på e-post. Ingen passord trengs."
-              : "Logg inn med e-postlenke, Google eller Vipps når det er konfigurert."}
+              ? "Opprett konto med en sikker e-postlenke. Ingen passord trengs."
+              : "Velkommen tilbake. Velg innloggingsmetoden som passer best."}
           </p>
 
+          <div className="mt-6 grid gap-3">
+            <button
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#DBE4EE] bg-white px-5 py-3.5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
+              disabled={!providers.google}
+              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+              type="button"
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[#DBE4EE] text-sm font-black">
+                G
+              </span>
+              Fortsett med Google
+            </button>
+
+            <button
+              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F3C3CC] bg-[#C8102E] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#a90d27] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
+              disabled={!providers.vipps}
+              onClick={() => signIn("vipps", { callbackUrl: "/dashboard" })}
+              type="button"
+            >
+              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-black">Vipps</span>
+              {providers.vipps ? "Fortsett med Vipps" : "Vipps kommer snart"}
+            </button>
+          </div>
+
+          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <span className="h-px flex-1 bg-slate-200" />
+            e-post
+            <span className="h-px flex-1 bg-slate-200" />
+          </div>
+
           {!smtpConfigured ? (
-            <p className="mt-5 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
+            <p className="mb-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
               E-postinnlogging er ikke konfigurert enda.
             </p>
           ) : null}
 
           {isRegister && !betaSignupsEnabled ? (
-            <p className="mt-5 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
+            <p className="mb-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
               Beta-registrering er midlertidig stengt.
             </p>
           ) : null}
 
-          <form className="mt-7" onSubmit={requestMagicLink}>
+          <form onSubmit={requestMagicLink}>
             <label className="text-sm font-semibold text-[#4A5568]" htmlFor="email">
               E-post
             </label>
@@ -148,11 +178,12 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
               value={email}
             />
             <button
-              className="mt-4 w-full rounded-xl bg-[#0D1B2A] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
+              className="mt-4 flex w-full items-center justify-center gap-3 rounded-xl bg-[#0D1B2A] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
               disabled={!canUseEmail || requestState === "loading"}
               type="submit"
             >
-              {requestState === "loading" ? "Sender lenke..." : submitText}
+              <span aria-hidden="true">@</span>
+              {requestState === "loading" ? "Sender lenke..." : "Fortsett med e-post"}
             </button>
           </form>
 
@@ -167,31 +198,6 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
               {message}
             </p>
           ) : null}
-
-          <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
-            eller
-            <span className="h-px flex-1 bg-slate-200" />
-          </div>
-
-          <div className="grid gap-3">
-            <button
-              className="w-full rounded-xl border border-[#DBE4EE] px-5 py-3.5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
-              disabled={!providers.google}
-              onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-              type="button"
-            >
-              Fortsett med Google
-            </button>
-            <button
-              className="w-full rounded-xl bg-[#C8102E] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#a90d27] disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
-              disabled={!providers.vipps}
-              onClick={() => signIn("vipps", { callbackUrl: "/dashboard" })}
-              type="button"
-            >
-              {providers.vipps ? "Fortsett med Vipps" : "Vipps Login er ikke konfigurert"}
-            </button>
-          </div>
 
           <Link
             className="mt-5 block text-center text-sm font-semibold text-[#0D1B2A] hover:text-[#C8102E]"

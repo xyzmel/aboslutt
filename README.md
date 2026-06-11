@@ -2,6 +2,12 @@
 
 Aboslutt er en Next.js + TypeScript + Tailwind MVP for en norsk abonnementstjeneste. Demoen bruker Prisma med Postgres og markerer oppsigelser i databasen.
 
+## Beta Positioning
+
+Aboslutt er først og fremst en manuell abonnementoversikt: alle brukere kan legge inn eksisterende abonnementer selv uten å koble til Gmail. Automatisk Gmail-/e-postskanning er en valgfri SaaS-funksjon som kan foreslå kandidater basert på kvitteringer. Brukeren må alltid bekrefte kandidatene før de lagres, og rå e-postinnhold lagres ikke.
+
+Vipps Login er planlagt, men skal vises som `kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+
 ## Kom I Gang
 
 ```bash
