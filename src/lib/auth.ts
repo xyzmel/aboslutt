@@ -49,8 +49,12 @@ const providers: NextAuthOptions["providers"] = [
         },
       });
 
-      if (!user?.passwordHash || !user.emailVerified) {
+      if (!user?.passwordHash) {
         return null;
+      }
+
+      if (!user.emailVerified) {
+        throw new Error("EMAIL_NOT_VERIFIED");
       }
 
       const passwordMatches = await verifyPassword(password, user.passwordHash);
@@ -70,6 +74,9 @@ const providers: NextAuthOptions["providers"] = [
   GoogleProvider({
     clientId: process.env.GOOGLE_CLIENT_ID ?? "",
     clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    // Beta tradeoff: Google is treated as a trusted provider and may link to an
+    // existing user with the same verified email. Review this before full production.
+    allowDangerousEmailAccountLinking: true,
     authorization: {
       params: {
         scope: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
@@ -155,6 +162,10 @@ export const authOptions: NextAuthOptions = {
   providers,
   session: {
     strategy: "jwt",
+  },
+  pages: {
+    signIn: "/login",
+    error: "/login",
   },
   secret: process.env.NEXTAUTH_SECRET,
   callbacks: {

@@ -22,6 +22,14 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
   const [form, setForm] = useState(defaultForm);
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [message, setMessage] = useState<string | null>(null);
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    const errorCode = new URLSearchParams(window.location.search).get("error");
+    return errorCode ? getAuthErrorMessage(errorCode) : null;
+  });
   const [providers, setProviders] = useState({ google: false, vipps: false });
 
   useEffect(() => {
@@ -49,6 +57,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
     event.preventDefault();
     setRequestState("loading");
     setMessage(null);
+    setAuthErrorMessage(null);
 
     try {
       if (mode === "register") {
@@ -69,10 +78,10 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(form),
     });
-    const result = (await response.json()) as { message?: string };
+    const result = await safeReadJson(response);
 
     if (!response.ok) {
-      throw new Error(result.message ?? "Kunne ikke opprette konto.");
+      throw new Error(result.error ?? result.message ?? "Kunne ikke opprette konto.");
     }
 
     setRequestState("success");
@@ -89,9 +98,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
     });
 
     if (result?.error) {
-      throw new Error(
-        "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.",
-      );
+      throw new Error(getAuthErrorMessage(result.error));
     }
 
     window.location.href = result?.url ?? "/dashboard";
@@ -127,6 +134,12 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
               ? "Opprett konto med e-post og passord. Du må bekrefte e-posten før innlogging."
               : "Logg inn med e-post og passord, eller fortsett med Google."}
           </p>
+
+          {authErrorMessage ? (
+            <p className="mt-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
+              {authErrorMessage}
+            </p>
+          ) : null}
 
           <form className="mt-6 grid gap-4" onSubmit={submitAuth}>
             {isRegister ? (
@@ -232,6 +245,38 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
       </section>
     </main>
   );
+}
+
+async function safeReadJson(response: Response) {
+  const text = await response.text();
+  if (!text) {
+    return {} as { ok?: boolean; message?: string; error?: string };
+  }
+
+  try {
+    return JSON.parse(text) as { ok?: boolean; message?: string; error?: string };
+  } catch {
+    return {
+      ok: false,
+      error: "Serveren svarte uventet. Prøv igjen om litt.",
+    };
+  }
+}
+
+function getAuthErrorMessage(errorCode: string) {
+  if (errorCode === "EMAIL_NOT_VERIFIED") {
+    return "E-posten din er ikke bekreftet ennå. Sjekk e-posten din før du logger inn.";
+  }
+
+  if (errorCode === "OAuthAccountNotLinked") {
+    return "Denne e-posten er allerede brukt med en annen innloggingsmetode. Prøv Google eller e-post/passord.";
+  }
+
+  if (errorCode === "AccessDenied") {
+    return "Innloggingen ble avvist. Prøv igjen eller bruk en annen innloggingsmetode.";
+  }
+
+  return "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.";
 }
 
 function GoogleIcon() {
