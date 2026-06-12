@@ -83,6 +83,7 @@ const providers: NextAuthOptions["providers"] = [
         scope: "openid email profile https://www.googleapis.com/auth/gmail.readonly",
         access_type: "offline",
         prompt: "consent",
+        response_type: "code",
       },
     },
   }),
@@ -179,6 +180,19 @@ export const authOptions: NextAuthOptions = {
         token.provider = account.provider;
       }
 
+      if (account?.provider === "google" && user?.id && account.providerAccountId) {
+        await preserveGoogleRefreshToken({
+          userId: user.id,
+          providerAccountId: account.providerAccountId,
+          accessToken: account.access_token,
+          refreshToken: account.refresh_token,
+          expiresAt: account.expires_at,
+          tokenType: account.token_type,
+          scope: account.scope,
+          idToken: account.id_token,
+        });
+      }
+
       if (!token.id && token.email) {
         const databaseUser = await prisma.user.findUnique({
           where: { email: token.email },
@@ -222,4 +236,47 @@ function getTokenId(token: JWT) {
   }
 
   return token.sub ?? "";
+}
+
+async function preserveGoogleRefreshToken({
+  userId,
+  providerAccountId,
+  accessToken,
+  refreshToken,
+  expiresAt,
+  tokenType,
+  scope,
+  idToken,
+}: {
+  userId: string;
+  providerAccountId: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresAt?: number;
+  tokenType?: string;
+  scope?: string;
+  idToken?: string;
+}) {
+  const data = {
+    access_token: accessToken ?? undefined,
+    expires_at: expiresAt ?? undefined,
+    token_type: tokenType ?? undefined,
+    scope: scope ?? undefined,
+    id_token: idToken ?? undefined,
+    refresh_token: refreshToken ?? undefined,
+  };
+
+  try {
+    await prisma.account.updateMany({
+      where: {
+        userId,
+        provider: "google",
+        providerAccountId,
+      },
+      data,
+    });
+  } catch {
+    // Never log OAuth token payloads. A failed opportunistic token update should
+    // not block sign-in; Gmail import will ask the user to reconnect if needed.
+  }
 }

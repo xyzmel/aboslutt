@@ -22,7 +22,7 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  let googleAccount: { scope: string | null } | null = null;
+  let googleAccount: { scope: string | null; refresh_token: string | null } | null = null;
   let notificationPreferences = {
     emailRemindersEnabled: true,
     reminderDaysBefore: 3,
@@ -32,7 +32,7 @@ export default async function SettingsPage() {
   try {
     googleAccount = await prisma.account.findFirst({
       where: { userId: currentUser.id, provider: "google" },
-      select: { scope: true },
+      select: { scope: true, refresh_token: true },
     });
   } catch (error) {
     logServerError("settings:googleAccount", error, currentUser.id);
@@ -62,6 +62,9 @@ export default async function SettingsPage() {
   const gmailScopeConnected = Boolean(
     googleAccount?.scope?.split(" ").includes(gmailReadonlyScope),
   );
+  const googleReconnectRequired = Boolean(
+    googleAccount && gmailScopeConnected && !googleAccount.refresh_token,
+  );
 
   return (
     <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
@@ -80,7 +83,8 @@ export default async function SettingsPage() {
         email={currentUser.email}
         emailRemindersEnabled={notificationPreferences.emailRemindersEnabled}
         gmailScopeConnected={gmailScopeConnected}
-        googleConnected={Boolean(googleAccount)}
+        googleConnected={gmailScopeConnected && !googleReconnectRequired}
+        googleReconnectRequired={googleReconnectRequired}
         monthlySummaryEnabled={notificationPreferences.monthlySummaryEnabled}
         name={currentUser.name}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}

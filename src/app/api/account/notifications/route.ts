@@ -11,31 +11,48 @@ export async function PATCH(request: Request) {
     return unauthorizedResponse();
   }
 
-  const payload = await request.json();
+  const payload = await request.json().catch(() => null);
+
+  if (!payload || typeof payload !== "object") {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_REQUEST", message: "Ugyldig forespørsel." },
+      { status: 400 },
+    );
+  }
+
   const data: {
     emailRemindersEnabled?: boolean;
     reminderDaysBefore?: number;
     monthlySummaryEnabled?: boolean;
   } = {};
 
-  if (payload.emailRemindersEnabled !== undefined) {
+  if ("emailRemindersEnabled" in payload) {
     if (typeof payload.emailRemindersEnabled !== "boolean") {
-      return NextResponse.json({ ok: false, error: "Ugyldig varselvalg." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "INVALID_NOTIFICATION_SETTING", message: "Ugyldig varselvalg." },
+        { status: 400 },
+      );
     }
     data.emailRemindersEnabled = payload.emailRemindersEnabled;
   }
 
-  if (payload.monthlySummaryEnabled !== undefined) {
+  if ("monthlySummaryEnabled" in payload) {
     if (typeof payload.monthlySummaryEnabled !== "boolean") {
-      return NextResponse.json({ ok: false, error: "Ugyldig oppsummeringsvalg." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "INVALID_SUMMARY_SETTING", message: "Ugyldig oppsummeringsvalg." },
+        { status: 400 },
+      );
     }
     data.monthlySummaryEnabled = payload.monthlySummaryEnabled;
   }
 
-  if (payload.reminderDaysBefore !== undefined) {
+  if ("reminderDaysBefore" in payload) {
     const reminderDaysBefore = Number(payload.reminderDaysBefore);
     if (!allowedReminderDays.includes(reminderDaysBefore)) {
-      return NextResponse.json({ ok: false, error: "Ugyldig påminnelsestid." }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "INVALID_REMINDER_DAYS", message: "Ugyldig påminnelsestid." },
+        { status: 400 },
+      );
     }
     data.reminderDaysBefore = reminderDaysBefore;
   }
@@ -51,21 +68,34 @@ export async function PATCH(request: Request) {
       },
     });
 
-    return NextResponse.json({ ok: true, preferences: updatedUser });
+    return NextResponse.json({ ok: true, preferences: withNotificationDefaults(updatedUser) });
   } catch (error) {
     logServerError("api/account/notifications:patch", error, currentUser.id);
     return NextResponse.json(
       {
         ok: false,
         error: "NOTIFICATION_SETTINGS_UNAVAILABLE",
-        message: "Varselinnstillinger er ikke tilgjengelige akkurat nå.",
+        message: "Varselinnstillinger kunne ikke lastes. Prøv igjen senere.",
       },
       { status: 503 },
     );
   }
 }
 
+function withNotificationDefaults(preferences: {
+  emailRemindersEnabled: boolean | null;
+  reminderDaysBefore: number | null;
+  monthlySummaryEnabled: boolean | null;
+}) {
+  return {
+    emailRemindersEnabled: preferences.emailRemindersEnabled ?? true,
+    reminderDaysBefore: preferences.reminderDaysBefore ?? 3,
+    monthlySummaryEnabled: preferences.monthlySummaryEnabled ?? false,
+  };
+}
+
 function logServerError(route: string, error: unknown, userId?: string) {
-  const safeError = error instanceof Error ? { name: error.name, message: error.message } : { message: "Ukjent feil" };
+  const safeError =
+    error instanceof Error ? { name: error.name, message: error.message } : { message: "Ukjent feil" };
   console.error("[api]", { route, userId, ...safeError });
 }

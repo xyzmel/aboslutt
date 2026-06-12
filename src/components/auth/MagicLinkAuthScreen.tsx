@@ -137,9 +137,18 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
           </p>
 
           {authErrorMessage ? (
-            <p className="mt-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
-              {authErrorMessage}
-            </p>
+            <div className="mt-4 rounded-xl bg-[#F5E6E9] px-4 py-3 text-sm font-semibold text-[#C8102E]">
+              <p>{authErrorMessage}</p>
+              {providers.google ? (
+                <button
+                  className="mt-3 rounded-lg bg-white px-3 py-2 text-xs font-bold text-[#0D1B2A] ring-1 ring-[#F3C3CC] hover:ring-[#C8102E]/50"
+                  onClick={() => signIn("google", { callbackUrl })}
+                  type="button"
+                >
+                  Prøv Google på nytt
+                </button>
+              ) : null}
+            </div>
           ) : null}
 
           <form className="mt-6 grid gap-4" onSubmit={submitAuth}>
@@ -265,6 +274,16 @@ async function safeReadJson(response: Response) {
 }
 
 function getAuthErrorMessage(errorCode: string) {
+  const messages: Record<string, string> = {
+    OAuthAccountNotLinked:
+      "Denne e-posten er allerede brukt med en annen innloggingsmetode. Logg inn med e-post/passord først, og koble Google fra innstillinger.",
+    EMAIL_NOT_VERIFIED: "E-posten din er ikke bekreftet ennå. Sjekk e-posten din før du logger inn.",
+    AccessDenied: "Innloggingen ble avvist. Prøv igjen eller bruk en annen innloggingsmetode.",
+    Callback: "Google-innloggingen kunne ikke fullføres. Prøv igjen, eller logg inn med e-post/passord.",
+    Configuration: "Innlogging er ikke riktig konfigurert akkurat nå. Prøv igjen senere.",
+  };
+
+  return messages[errorCode] ?? "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.";
   if (errorCode === "OAuthAccountNotLinked") {
     return "Denne e-posten er allerede brukt med en annen innloggingsmetode. Logg inn med e-post/passord først, og koble Google fra innstillinger.";
   }

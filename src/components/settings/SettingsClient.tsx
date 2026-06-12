@@ -8,6 +8,7 @@ type SettingsClientProps = {
   email: string | null;
   googleConnected: boolean;
   gmailScopeConnected: boolean;
+  googleReconnectRequired: boolean;
   emailRemindersEnabled: boolean;
   reminderDaysBefore: number;
   monthlySummaryEnabled: boolean;
@@ -18,6 +19,7 @@ export function SettingsClient({
   email,
   googleConnected,
   gmailScopeConnected,
+  googleReconnectRequired,
   emailRemindersEnabled,
   reminderDaysBefore,
   monthlySummaryEnabled,
@@ -85,13 +87,22 @@ export function SettingsClient({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(nextForm),
       });
-      const result = await response.json();
+      const result = (await response.json().catch(() => ({}))) as {
+        ok?: boolean;
+        message?: string;
+        error?: string;
+        preferences?: typeof notificationForm;
+      };
 
       if (!response.ok) {
-        throw new Error(result.error ?? "Kunne ikke lagre varselinnstillinger.");
+        throw new Error(
+          result.message ?? "Varselinnstillinger kunne ikke lastes. Prøv igjen senere.",
+        );
       }
 
-      setNotificationForm(result.preferences);
+      if (result.preferences) {
+        setNotificationForm(result.preferences);
+      }
       setMessage("Varselinnstillinger er lagret.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kunne ikke lagre varselinnstillinger.");
@@ -142,16 +153,23 @@ export function SettingsClient({
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
           <h2 className="text-lg font-extrabold tracking-tight">Tilkoblinger</h2>
           <div className="mt-4 space-y-2 text-sm text-[#5F6F82]">
-            <p>Google/Gmail: {googleConnected ? "Google/Gmail er tilkoblet" : "Ikke koblet til"}</p>
+            <p>
+              Google/Gmail:{" "}
+              {googleConnected
+                ? "Google/Gmail er tilkoblet"
+                : googleReconnectRequired
+                  ? "Koble til på nytt"
+                  : "Ikke koblet til"}
+            </p>
             <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
           </div>
-          {!googleConnected ? (
+          {!googleConnected || googleReconnectRequired ? (
             <button
               className="mt-5 rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
               onClick={() => signIn("google", { callbackUrl: "/settings" })}
               type="button"
             >
-              Koble til Google/Gmail
+              {googleReconnectRequired ? "Koble til på nytt" : "Koble til Google/Gmail"}
             </button>
           ) : (
             <div className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
