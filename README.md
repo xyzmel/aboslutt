@@ -299,6 +299,14 @@ Invoke-RestMethod -Method Post -Uri "https://www.aboslutt.no/api/jobs/send-month
 
 `/api/health` viser `cronConfigured` og `emailConfigured` som trygge booleans uten å lekke verdier.
 
+Etter notification/cron-endringer må produksjonsdatabasen migreres:
+
+```bash
+npm run prisma:deploy
+```
+
+Ikke bruk `prisma migrate reset` i produksjon.
+
 ## Email Og Gmail Import
 
 `/import/email` har to flyter:

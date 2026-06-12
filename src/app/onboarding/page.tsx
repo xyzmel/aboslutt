@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentAppUser } from "@/lib/current-user";
 
+export const dynamic = "force-dynamic";
+
 export default async function OnboardingPage() {
   const currentUser = await getCurrentAppUser();
 

@@ -4,6 +4,16 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const demoUserEmail = "demo@aboslutt.local";
+const currentUserSelect = {
+  id: true,
+  name: true,
+  email: true,
+  emailVerified: true,
+  passwordHash: true,
+  image: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
 
 export class UnauthorizedError extends Error {
   constructor(message = "Du må være logget inn.") {
@@ -31,6 +41,7 @@ export async function getCurrentUser() {
   if (sessionUserId) {
     const user = await prisma.user.findUnique({
       where: { id: sessionUserId },
+      select: currentUserSelect,
     });
 
     if (user) {
@@ -53,6 +64,7 @@ export async function getCurrentUser() {
         name: sessionName,
         image: sessionImage,
       },
+      select: currentUserSelect,
     });
   }
 
@@ -65,6 +77,7 @@ export async function getCurrentUser() {
         email: demoUserEmail,
         name: "Demo-bruker",
       },
+      select: currentUserSelect,
     });
   }
 

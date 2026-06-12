@@ -40,15 +40,32 @@ export async function PATCH(request: Request) {
     data.reminderDaysBefore = reminderDaysBefore;
   }
 
-  const updatedUser = await prisma.user.update({
-    where: { id: currentUser.id },
-    data,
-    select: {
-      emailRemindersEnabled: true,
-      reminderDaysBefore: true,
-      monthlySummaryEnabled: true,
-    },
-  });
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: currentUser.id },
+      data,
+      select: {
+        emailRemindersEnabled: true,
+        reminderDaysBefore: true,
+        monthlySummaryEnabled: true,
+      },
+    });
 
-  return NextResponse.json({ ok: true, preferences: updatedUser });
+    return NextResponse.json({ ok: true, preferences: updatedUser });
+  } catch (error) {
+    logServerError("api/account/notifications:patch", error, currentUser.id);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "NOTIFICATION_SETTINGS_UNAVAILABLE",
+        message: "Varselinnstillinger er ikke tilgjengelige akkurat nå.",
+      },
+      { status: 503 },
+    );
+  }
+}
+
+function logServerError(route: string, error: unknown, userId?: string) {
+  const safeError = error instanceof Error ? { name: error.name, message: error.message } : { message: "Ukjent feil" };
+  console.error("[api]", { route, userId, ...safeError });
 }
