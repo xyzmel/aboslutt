@@ -100,6 +100,24 @@ Manuell abonnementssporing er gratis å starte med. Brukere kan legge inn abonne
 
 Planlogikken ligger i `src/lib/plans.ts`. Backend håndhever at Gratis-brukere kan legge til maks 10 abonnementer, men de kan fortsatt se, redigere og slette eksisterende abonnementer. Gratis-brukere får ikke bruke Gmail-skanning, e-postvarsler eller månedlig oppsummering. Admin kan endre brukerplan fra `/admin/users/[id]`.
 
+## Beta Requests And Feedback
+
+Besøkende kan be om beta-tilgang fra `/pricing`. Skjemaet lagrer navn, e-post og valgfri melding i `BetaRequest` med status `pending`.
+
+Innloggede brukere kan sende feedback fra appen. Feedback lagres med bruker, melding, valgfri rating og hvilken side den kom fra. OAuth tokens, passordhash, Gmail-innhold og secrets lagres aldri i feedback.
+
+Admin-portalen viser siste beta-forespørsler og siste feedback:
+
+- `Godkjenn` setter beta-forespørselen til `approved` og setter brukerens plan til `beta` hvis e-postadressen allerede finnes som bruker.
+- `Avvis` setter beta-forespørselen til `rejected`.
+- Feedback kan markeres som lest.
+
+Etter migrasjonen `20260612133000_add_beta_requests_feedback_review` må produksjonsdatabasen oppdateres:
+
+```bash
+npm run prisma:deploy
+```
+
 ## Beta Registration
 
 `/register` bruker nå e-post og passord for beta-registrering. Passord lagres kun som bcrypt-hash i `User.passwordHash`. Brukeren må bekrefte e-postadressen via `/verify-email?token=...` før innlogging med passord fungerer.

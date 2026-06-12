@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/error-boundaries */
 import Link from "next/link";
+import { AdminBetaRequestActions, AdminFeedbackActions } from "@/components/admin/AdminReviewActions";
 import { AdminForbiddenError, requireAdminUser } from "@/lib/admin";
 import { sessionStrategy } from "@/lib/auth";
 import { isCronConfigured } from "@/lib/cron";
@@ -37,6 +38,7 @@ export default async function AdminPage() {
       gmailConnectedUsers,
       emailRemindersEnabledCount,
       monthlySummaryEnabledCount,
+      latestBetaRequests,
       latestUsers,
       latestFeedback,
     ] = await Promise.all([
@@ -55,6 +57,19 @@ export default async function AdminPage() {
       }),
       prisma.user.count({ where: { emailRemindersEnabled: true } }),
       prisma.user.count({ where: { monthlySummaryEnabled: true } }),
+      prisma.betaRequest.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          message: true,
+          status: true,
+          createdAt: true,
+          reviewedAt: true,
+        },
+      }),
       prisma.user.findMany({
         orderBy: { createdAt: "desc" },
         take: 50,
@@ -78,6 +93,8 @@ export default async function AdminPage() {
           email: true,
           message: true,
           rating: true,
+          page: true,
+          reviewedAt: true,
           createdAt: true,
           user: { select: { email: true, name: true } },
         },
@@ -165,6 +182,40 @@ export default async function AdminPage() {
                 subscriptionCount={totalSubscriptions}
               />
               <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+                <h2 className="text-lg font-extrabold tracking-tight">Beta-forespørsler</h2>
+                <div className="mt-4 grid gap-3">
+                  {latestBetaRequests.length > 0 ? (
+                    latestBetaRequests.map((request) => (
+                      <div className="rounded-xl bg-[#F7F9FC] p-4 text-sm" key={request.id}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-bold">{request.name ?? "Uten navn"}</p>
+                            <p className="text-[#5F6F82]">{request.email}</p>
+                          </div>
+                          <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[#5F6F82]">
+                            {formatBetaStatus(request.status)}
+                          </span>
+                        </div>
+                        {request.message ? (
+                          <p className="mt-2 line-clamp-4 text-[#4A5568]">{request.message}</p>
+                        ) : null}
+                        <p className="mt-2 text-xs text-[#5F6F82]">
+                          {formatDate(request.createdAt)}
+                          {request.reviewedAt ? ` · vurdert ${formatDate(request.reviewedAt)}` : ""}
+                        </p>
+                        {request.status === "pending" ? (
+                          <AdminBetaRequestActions requestId={request.id} />
+                        ) : null}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="rounded-xl bg-[#F7F9FC] p-4 text-sm text-[#5F6F82]">
+                      Ingen beta-forespørsler ennå.
+                    </p>
+                  )}
+                </div>
+              </section>
+              <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
                 <h2 className="text-lg font-extrabold tracking-tight">Siste tilbakemeldinger</h2>
                 <div className="mt-4 grid gap-3">
                   {latestFeedback.length > 0 ? (
@@ -179,7 +230,12 @@ export default async function AdminPage() {
                           </span>
                         </div>
                         <p className="mt-2 line-clamp-4 text-[#4A5568]">{feedback.message}</p>
-                        <p className="mt-2 text-xs text-[#5F6F82]">{formatDate(feedback.createdAt)}</p>
+                        <p className="mt-2 text-xs text-[#5F6F82]">
+                          {formatDate(feedback.createdAt)}
+                          {feedback.page ? ` · ${feedback.page}` : ""}
+                          {feedback.reviewedAt ? " · lest" : ""}
+                        </p>
+                        {!feedback.reviewedAt ? <AdminFeedbackActions feedbackId={feedback.id} /> : null}
                       </div>
                     ))
                   ) : (
@@ -294,6 +350,16 @@ function AdminLoadError() {
       </section>
     </main>
   );
+}
+
+function formatBetaStatus(status: string) {
+  const labels: Record<string, string> = {
+    pending: "Venter",
+    approved: "Godkjent",
+    rejected: "Avvist",
+  };
+
+  return labels[status] ?? status;
 }
 
 function formatProviders(accounts: { provider: string }[], hasPassword: boolean) {

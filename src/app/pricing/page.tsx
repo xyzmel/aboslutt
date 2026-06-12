@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
+import { BetaRequestForm } from "@/components/beta/BetaRequestForm";
 import { PublicFooter } from "@/components/public/PublicFooter";
 import { isAdminUser } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
@@ -144,6 +145,22 @@ export default async function PricingPage() {
             title="Betaling kommer senere"
             text="Premium er en planlagt betalt plan. Ingen checkout eller betaling er live nå."
           />
+        </div>
+      </section>
+
+      <section className="bg-white px-5 py-14 text-[#0D1B2A]">
+        <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.8fr_1fr] lg:items-start">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Beta</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Be om beta-tilgang</h2>
+            <p className="mt-4 text-sm leading-6 text-[#5F6F82]">
+              Vil du teste Gmail-skanning, varsler og månedlig oppsummering? Send en kort forespørsel, så kan
+              vi gi beta-tilgang fra admin når det passer.
+            </p>
+          </div>
+          <div className="rounded-2xl bg-[#F0F4F8] p-5 ring-1 ring-[#DBE4EE]">
+            <BetaRequestForm />
+          </div>
         </div>
       </section>
 

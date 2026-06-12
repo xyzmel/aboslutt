@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/current-user";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
@@ -32,12 +32,17 @@ export async function POST(request: Request) {
 
   const currentUser = await getCurrentUser();
 
+  if (!currentUser) {
+    return unauthorizedResponse();
+  }
+
   await prisma.feedback.create({
     data: {
-      userId: currentUser?.id,
-      email: email || currentUser?.email || null,
+      userId: currentUser.id,
+      email: email || currentUser.email || null,
       message,
       rating,
+      page: typeof payload.page === "string" ? payload.page.trim().slice(0, 240) : null,
     },
     select: { id: true },
   });

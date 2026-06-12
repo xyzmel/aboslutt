@@ -22,6 +22,7 @@ model User {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
+  betaRequests  BetaRequest[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   feedback      Feedback[]
@@ -36,11 +37,32 @@ model Feedback {
   email     String?
   message   String
   rating    Int?
+  page      String?
+  reviewedAt DateTime?
+  reviewedBy String?
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([reviewedAt])
   @@index([createdAt])
+}
+
+model BetaRequest {
+  id         String   @id @default(cuid())
+  name       String?
+  email      String
+  message    String?
+  status     String   @default("pending")
+  createdAt  DateTime @default(now())
+  reviewedAt DateTime?
+  reviewedBy String?
+  reviewer   User?    @relation(fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+  @@index([reviewedBy])
 }
 
 model JobRun {

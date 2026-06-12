@@ -6,6 +6,7 @@ import { signOut, useSession } from "next-auth/react";
 import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellation";
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
+import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import {
   formatDateForShortDisplay,
   normalizeDateInputValue,
@@ -362,6 +363,9 @@ export function DashboardClient() {
                 </Link>
               </div>
             )}
+            {session ? (
+              <FeedbackButton page="/dashboard" />
+            ) : null}
             {session ? (
               <button
                 className="text-sm font-semibold text-white/60 hover:text-white"
