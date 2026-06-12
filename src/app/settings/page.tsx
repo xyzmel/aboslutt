@@ -85,8 +85,8 @@ export default async function SettingsPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-      <AppHeader maxWidthClassName="max-w-4xl" />
+    <main className="flex min-h-screen flex-col bg-[#F0F4F8] text-[#0D1B2A]">
+      <AppHeader />
 
       <SettingsClient
         email={currentUser.email}
@@ -104,7 +104,7 @@ export default async function SettingsPage() {
         vippsConnected={Boolean(vippsAccount)}
         vippsConfigured={isVippsConfigured()}
       />
-      <AppFooter />
+      <AppFooter compact />
     </main>
   );
 }

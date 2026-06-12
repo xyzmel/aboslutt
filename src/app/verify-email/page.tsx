@@ -12,9 +12,9 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
   const result = await verifyToken(token);
 
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <PublicHeader />
-      <section className="mx-auto w-full max-w-md px-5 py-10">
+      <section className="mx-auto w-full max-w-md flex-1 px-5 py-10">
         <div className="rounded-[1.25rem] bg-white p-7 text-center shadow-2xl shadow-black/20 sm:p-9">
         <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5E6E9] text-lg font-extrabold text-[#C8102E]">
           A

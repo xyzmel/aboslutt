@@ -10,9 +10,9 @@ type PublicPageShellProps = {
 
 export function PublicPageShell({ title, intro, children }: PublicPageShellProps) {
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <PublicHeader maxWidthClassName="max-w-3xl" />
-      <section className="px-5 py-10">
+      <section className="flex-1 px-5 py-10">
         <div className="mx-auto w-full max-w-3xl">
           <div className="rounded-2xl bg-white p-6 text-[#0D1B2A] shadow-2xl shadow-black/20 sm:p-8">
             <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">

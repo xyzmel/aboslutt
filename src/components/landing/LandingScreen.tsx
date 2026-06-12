@@ -81,7 +81,7 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
   const userLabel = user?.name ?? user?.email ?? "";
 
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <section className="relative overflow-hidden px-5 py-8 sm:py-10">
         <div className="relative z-10 mx-auto w-full max-w-6xl">
           <PublicHeader />

@@ -48,7 +48,7 @@ export default async function PricingPage() {
   const user = session?.user ? { email: session.user.email ?? null } : null;
 
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <PublicHeader />
 
       <section className="px-5 py-14">

@@ -228,10 +228,10 @@ export default function EmailImportPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
+    <main className="flex min-h-screen flex-col bg-[#F0F4F8] text-[#0D1B2A]">
       <AppHeader maxWidthClassName="max-w-4xl" />
 
-      <section className="mx-auto max-w-4xl px-5 py-8">
+      <section className="mx-auto w-full max-w-4xl flex-1 px-5 py-8">
         {status === "unauthenticated" ? (
           <div className="mb-6 rounded-2xl border border-[#F3C3CC] bg-[#F5E6E9] p-5 text-sm text-[#C8102E]">
             <p className="font-bold">Du må logge inn for å importere abonnementer.</p>
@@ -405,7 +405,7 @@ export default function EmailImportPage() {
         ) : null}
       </section>
 
-      <AppFooter />
+      <AppFooter compact />
     </main>
   );
 }

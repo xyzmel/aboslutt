@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
@@ -132,7 +133,7 @@ export function SettingsClient({
   }
 
   return (
-    <section className="mx-auto max-w-4xl px-5 py-8">
+    <section className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
       <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Konto</p>
       <h1 className="mt-2 text-3xl font-extrabold tracking-tight">Innstillinger</h1>
 
@@ -174,63 +175,49 @@ export function SettingsClient({
           ) : null}
         </section>
 
-        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+        <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-[#DBE4EE]">
           <h2 className="text-lg font-extrabold tracking-tight">Tilkoblinger</h2>
-          <div className="mt-4 space-y-2 text-sm text-[#5F6F82]">
-            <p>
-              Google/Gmail:{" "}
-              {googleConnected
-                ? "Google/Gmail er tilkoblet"
-                : googleReconnectRequired
-                  ? "Koble til på nytt"
-                  : "Ikke koblet til"}
-            </p>
-            <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
-            <div className="flex items-center gap-2">
-              <Image
-                alt=""
-                className="h-5 w-auto"
-                height={29}
-                src="/vipps-logo-transparent.png"
-                width={96}
-              />
-              <span>{vippsConnected ? "Vipps er tilkoblet" : "Ikke koblet til"}</span>
-            </div>
+          <div className="mt-4 grid gap-3">
+            <ConnectionRow
+              action={
+                !googleConnected || googleReconnectRequired ? (
+                  <button
+                    className="rounded-xl bg-[#C8102E] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#a90d27]"
+                    onClick={() => signIn("google", { callbackUrl: "/settings" })}
+                    type="button"
+                  >
+                    {googleReconnectRequired ? "Koble til på nytt" : "Koble til Google/Gmail"}
+                  </button>
+                ) : null
+              }
+              eyebrow="Google/Gmail"
+              status={gmailScopeConnected ? "Gmail read-only er aktiv" : "Gmail read-only mangler"}
+              title={
+                googleConnected
+                  ? "Google/Gmail er tilkoblet"
+                  : googleReconnectRequired
+                    ? "Koble til Google/Gmail på nytt"
+                    : "Google/Gmail er ikke koblet til"
+              }
+            />
+            <ConnectionRow
+              action={
+                !vippsConnected && vippsConfigured ? (
+                  <button
+                    className="inline-flex items-center justify-center rounded-xl bg-[#FF5B24] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#e94f1f]"
+                    onClick={() => signIn("vipps", { callbackUrl: "/settings" })}
+                    type="button"
+                  >
+                    Koble til Vipps
+                  </button>
+                ) : null
+              }
+              eyebrow="Vipps"
+              logo={<VippsLogo />}
+              status={vippsConnected ? "Vipps er tilkoblet" : "Vipps er ikke koblet til"}
+              title={vippsConnected ? "Vipps er tilkoblet" : "Koble til Vipps"}
+            />
           </div>
-          {!googleConnected || googleReconnectRequired ? (
-            <button
-              className="mt-5 rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
-              onClick={() => signIn("google", { callbackUrl: "/settings" })}
-              type="button"
-            >
-              {googleReconnectRequired ? "Koble til på nytt" : "Koble til Google/Gmail"}
-            </button>
-          ) : (
-            <div className="mt-5 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              Google/Gmail er tilkoblet.
-            </div>
-          )}
-          {vippsConnected ? (
-            <div className="mt-3 flex items-center gap-3 rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
-              <Image
-                alt=""
-                className="h-5 w-auto"
-                height={29}
-                src="/vipps-logo-transparent.png"
-                width={96}
-              />
-              <span>Vipps er tilkoblet.</span>
-            </div>
-          ) : vippsConfigured ? (
-            <button
-              className="mt-3 inline-flex items-center gap-3 rounded-xl bg-[#FF5B24] px-5 py-3 text-sm font-bold text-white hover:bg-[#e94f1f]"
-              onClick={() => signIn("vipps", { callbackUrl: "/settings" })}
-              type="button"
-            >
-              <Image alt="" className="h-5 w-auto" height={29} src="/vipps-logo.png" width={96} />
-              <span>Koble til Vipps</span>
-            </button>
-          ) : null}
           <p className="mt-4 text-sm leading-6 text-[#5F6F82]">
             Full tilbakekalling hos Google er ikke implementert ennå. Du kan fjerne
             tilgangen i Google-kontoen din under tredjepartstilganger.
@@ -244,8 +231,7 @@ export function SettingsClient({
           </p>
           {!emailRemindersAvailable || !monthlySummaryAvailable ? (
             <p className="mt-3 rounded-xl bg-[#FFF6E8] px-4 py-3 text-sm font-semibold text-[#8A4B13]">
-              Varsler og månedlig oppsummering er beta/premium-funksjoner. Du kan fortsatt legge inn abonnementer
-              manuelt gratis.
+              Varsler er tilgjengelig for beta og premium. Du kan fortsatt legge inn abonnementer manuelt gratis.
             </p>
           ) : null}
           <div className="mt-5 grid gap-4">
@@ -334,5 +320,47 @@ export function SettingsClient({
         </section>
       </div>
     </section>
+  );
+}
+
+function ConnectionRow({
+  eyebrow,
+  title,
+  status,
+  logo,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  status: string;
+  logo?: ReactNode;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl bg-[#F7F9FC] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-4">
+        <div className="flex h-12 w-20 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-[#DBE4EE]">
+          {logo ?? <span className="text-sm font-black text-[#0D1B2A]">G</span>}
+        </div>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wide text-[#5F6F82]">{eyebrow}</p>
+          <p className="mt-1 text-sm font-extrabold text-[#0D1B2A]">{title}</p>
+          <p className="mt-1 text-sm text-[#5F6F82]">{status}</p>
+        </div>
+      </div>
+      {action ? <div className="shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+function VippsLogo() {
+  return (
+    <Image
+      alt="Vipps"
+      className="h-auto w-14 object-contain"
+      height={29}
+      src="/vipps-logo-transparent.png"
+      width={96}
+    />
   );
 }

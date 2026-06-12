@@ -14,10 +14,10 @@ export default async function OnboardingPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
+    <main className="flex min-h-screen flex-col bg-[#F0F4F8] text-[#0D1B2A]">
       <AppHeader maxWidthClassName="max-w-5xl" />
 
-      <section className="mx-auto max-w-5xl px-5 py-10">
+      <section className="mx-auto w-full max-w-5xl flex-1 px-5 py-10">
         <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Kom i gang</p>
         <h1 className="mt-2 max-w-2xl text-4xl font-extrabold tracking-tight">
           Start med abonnementene du allerede kjenner
@@ -50,7 +50,7 @@ export default async function OnboardingPage() {
           />
         </div>
       </section>
-      <AppFooter />
+      <AppFooter compact />
     </main>
   );
 }

@@ -123,9 +123,9 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
   }
 
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <PublicHeader />
-      <section className="mx-auto flex w-full max-w-md px-5 py-10">
+      <section className="mx-auto flex w-full max-w-md flex-1 px-5 py-10">
         <div className="rounded-[1.25rem] bg-white p-7 shadow-2xl shadow-black/20 sm:p-9">
           <div className="mb-6 flex items-center gap-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C8102E] text-lg font-extrabold text-white">

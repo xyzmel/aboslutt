@@ -11,14 +11,20 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
 
   if (compact) {
     return (
-      <footer className="border-t border-[#DBE4EE] bg-[#F0F4F8] px-5 py-6 text-sm text-[#5F6F82]">
-        <div className="mx-auto flex max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            Aboslutt · Melby Solutions · Org.nr. 925 919 020
-          </p>
-          <Link className="font-semibold text-[#C8102E] hover:underline" href="/contact">
-            Kontakt
-          </Link>
+      <footer className="border-t border-[#DBE4EE] bg-[#F0F4F8] px-5 py-5 text-xs text-[#5F6F82]">
+        <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p>Aboslutt · Melby Solutions · Org.nr. 925 919 020</p>
+          <nav className="flex flex-wrap gap-3 font-semibold">
+            <Link className="hover:text-[#C8102E]" href="/privacy">
+              Personvern
+            </Link>
+            <Link className="hover:text-[#C8102E]" href="/terms">
+              Vilkår
+            </Link>
+            <Link className="hover:text-[#C8102E]" href="/contact">
+              Kontakt
+            </Link>
+          </nav>
         </div>
       </footer>
     );

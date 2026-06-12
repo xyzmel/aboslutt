@@ -126,10 +126,10 @@ export function SubscriptionDetailClient({
   }
 
   return (
-    <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
+    <main className="flex min-h-screen flex-col bg-[#F0F4F8] text-[#0D1B2A]">
       <AppHeader maxWidthClassName="max-w-4xl" />
 
-      <section className="mx-auto max-w-4xl px-5 py-8">
+      <section className="mx-auto w-full max-w-4xl flex-1 px-5 py-8">
         {errorMessage ? (
           <div className="mb-5 rounded-2xl border border-[#F3C3CC] bg-[#F5E6E9] p-4 text-sm font-semibold text-[#C8102E]">
             {errorMessage}
@@ -252,7 +252,7 @@ export function SubscriptionDetailClient({
           )}
         </div>
       </section>
-      <AppFooter />
+      <AppFooter compact />
     </main>
   );
 }

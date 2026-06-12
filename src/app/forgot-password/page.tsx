@@ -28,9 +28,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#0D1B2A] text-white">
+    <main className="flex min-h-screen flex-col bg-[#0D1B2A] text-white">
       <PublicHeader />
-      <section className="mx-auto w-full max-w-md px-5 py-10">
+      <section className="mx-auto w-full max-w-md flex-1 px-5 py-10">
         <Link className="mb-6 inline-flex text-sm font-medium text-white/55 hover:text-white" href="/login">
           Tilbake til innlogging
         </Link>

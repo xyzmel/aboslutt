@@ -78,7 +78,7 @@ function FeatureList({ title, items, muted = false }: { title: string; items: st
 
 function getPlanCtaText(plan: Plan) {
   if (plan === "free") {
-    return "Manuell sporing er gratis. Automatiske funksjoner kan åpnes med beta-tilgang.";
+    return "Manuell oversikt er gratis. Automatiske funksjoner kan åpnes med beta-tilgang.";
   }
 
   if (plan === "admin") {

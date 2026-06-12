@@ -334,10 +334,10 @@ export function DashboardClient() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F0F4F8] pb-28 text-[#0D1B2A]">
+    <main className="flex min-h-screen flex-col bg-[#F0F4F8] pb-28 text-[#0D1B2A]">
       <AppHeader />
 
-      <section className="mx-auto max-w-6xl px-5 py-8">
+      <section className="mx-auto w-full max-w-6xl flex-1 px-5 py-8">
         {errorMessage ? (
           <div className="mb-5 rounded-2xl border border-[#F3C3CC] bg-[#F5E6E9] p-4 text-sm font-semibold text-[#C8102E]">
             {errorMessage}
@@ -570,7 +570,7 @@ export function DashboardClient() {
         ) : null}
       </section>
 
-      <AppFooter />
+      <AppFooter compact />
 
       {step === "overview" && selectedIds.length > 0 ? (
         <div className="fixed inset-x-0 bottom-0 border-t border-[#DBE4EE] bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">
