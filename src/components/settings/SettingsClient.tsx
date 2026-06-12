@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 
@@ -176,7 +177,16 @@ export function SettingsClient({
                   : "Ikke koblet til"}
             </p>
             <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
-            <p>Vipps: {vippsConnected ? "Vipps er tilkoblet" : "Ikke koblet til"}</p>
+            <div className="flex items-center gap-2">
+              <Image
+                alt=""
+                className="h-5 w-auto"
+                height={29}
+                src="/vipps-logo-transparent.png"
+                width={96}
+              />
+              <span>{vippsConnected ? "Vipps er tilkoblet" : "Ikke koblet til"}</span>
+            </div>
           </div>
           {!googleConnected || googleReconnectRequired ? (
             <button
@@ -192,16 +202,24 @@ export function SettingsClient({
             </div>
           )}
           {vippsConnected ? (
-            <div className="mt-3 rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
-              Vipps er tilkoblet.
+            <div className="mt-3 flex items-center gap-3 rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
+              <Image
+                alt=""
+                className="h-5 w-auto"
+                height={29}
+                src="/vipps-logo-transparent.png"
+                width={96}
+              />
+              <span>Vipps er tilkoblet.</span>
             </div>
           ) : vippsConfigured ? (
             <button
-              className="mt-3 rounded-xl bg-[#FF5B24] px-5 py-3 text-sm font-bold text-white hover:bg-[#e94f1f]"
+              className="mt-3 inline-flex items-center gap-3 rounded-xl bg-[#FF5B24] px-5 py-3 text-sm font-bold text-white hover:bg-[#e94f1f]"
               onClick={() => signIn("vipps", { callbackUrl: "/settings" })}
               type="button"
             >
-              Koble til Vipps
+              <Image alt="" className="h-5 w-auto" height={29} src="/vipps-logo.png" width={96} />
+              <span>Koble til Vipps</span>
             </button>
           ) : null}
           <p className="mt-4 text-sm leading-6 text-[#5F6F82]">

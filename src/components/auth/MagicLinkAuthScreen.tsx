@@ -248,7 +248,16 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
               onClick={() => signIn("vipps", { callbackUrl })}
               type="button"
             >
-              <Image alt="" height={24} src="/vipps-logo.svg" width={73} />
+              {providers.vipps ? (
+                <Image
+                  alt=""
+                  className="h-5 w-auto"
+                  height={29}
+                  priority
+                  src="/vipps-logo.png"
+                  width={96}
+                />
+              ) : null}
               {providers.vipps ? "Fortsett med Vipps" : "Vipps Login kommer snart"}
             </button>
           </div>

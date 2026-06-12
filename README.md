@@ -168,7 +168,7 @@ Produksjon: https://api.vipps.no/access-management-1.0/access/.well-known/openid
 
 Ikke commit Vipps-nøkler. Bruk `.env.local` lokalt og sikre secret-håndtering i hostingmiljøet.
 
-Vipps-knappen bruker en lokal SVG under `public/vipps-logo.svg`. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
+Vipps-knappen bruker lokale Vipps-assets under `public/`, blant annet `public/vipps-logo.png` for innlogging og `public/vipps-logo-transparent.png` i tilkoblingsvisninger. `Pay with Vipps`-assets er reservert for eventuell fremtidig betaling/checkout. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
 
 ### Vipps Troubleshooting
 
