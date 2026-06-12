@@ -6,8 +6,11 @@ type JobResult = {
   ok?: boolean;
   dryRun?: boolean;
   usersChecked?: number;
+  activeSubscriptionsChecked?: number;
+  dueReminders?: number;
   emailsSent?: number;
   remindersCreated?: number;
+  skippedReasons?: Record<string, number>;
   message?: string;
   error?: string;
 };
@@ -40,10 +43,13 @@ export function AdminJobsClient() {
 
       setResult(
         [
-          payload.dryRun ? "Dry-run fullført." : "Jobb kjørt.",
+          payload.dryRun ? "Dry-run fullfort." : "Jobb kjort.",
           `Brukere sjekket: ${payload.usersChecked ?? 0}`,
+          `Aktive abonnementer sjekket: ${payload.activeSubscriptionsChecked ?? 0}`,
+          `Forfalte paminnelser: ${payload.dueReminders ?? 0}`,
           `E-poster: ${payload.emailsSent ?? 0}`,
-          `Påminnelser: ${payload.remindersCreated ?? 0}`,
+          `Paminnelser: ${payload.remindersCreated ?? 0}`,
+          formatSkippedReasons(payload.skippedReasons),
         ].join(" "),
       );
     } catch (error) {
@@ -57,7 +63,7 @@ export function AdminJobsClient() {
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
       <h2 className="text-lg font-extrabold tracking-tight">Test jobber</h2>
       <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
-        Dry-run teller hvem som ville fått e-post uten å sende noe.
+        Dry-run teller hvem som ville fatt e-post uten aa sende noe.
       </p>
 
       <label className="mt-5 flex items-center justify-between gap-4 rounded-xl bg-[#F7F9FC] p-4 text-sm font-semibold">
@@ -87,7 +93,7 @@ export function AdminJobsClient() {
           }
           type="button"
         >
-          {isWorking === "reminders" ? "Kjører..." : "Test kommende trekk-varsler"}
+          {isWorking === "reminders" ? "Kjorer..." : "Test kommende trekk-varsler"}
         </button>
         <button
           className="rounded-xl bg-[#0D1B2A] px-5 py-3 text-sm font-bold text-white hover:bg-[#15283c] disabled:opacity-50"
@@ -99,7 +105,7 @@ export function AdminJobsClient() {
           }
           type="button"
         >
-          {isWorking === "monthly" ? "Kjører..." : "Test månedlig oppsummering"}
+          {isWorking === "monthly" ? "Kjorer..." : "Test manedlig oppsummering"}
         </button>
         <button
           className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50 disabled:opacity-50"
@@ -112,4 +118,26 @@ export function AdminJobsClient() {
       </div>
     </section>
   );
+}
+
+function formatSkippedReasons(skippedReasons?: Record<string, number>) {
+  if (!skippedReasons) {
+    return "";
+  }
+
+  const labels: Record<string, string> = {
+    missingEmail: "mangler e-post",
+    unverifiedEmail: "ikke verifisert",
+    remindersDisabled: "varsler av",
+    noActiveSubscriptions: "ingen aktive abonnementer",
+    missingOrInvalidNextPayment: "mangler/ugyldig neste trekk",
+    notDueToday: "ikke forfall i dag",
+    alreadySent: "allerede sendt",
+  };
+
+  const parts = Object.entries(skippedReasons)
+    .filter(([, count]) => count > 0)
+    .map(([key, count]) => `${labels[key] ?? key}: ${count}`);
+
+  return parts.length ? `Hoppet over: ${parts.join(", ")}.` : "Ingen hoppet over.";
 }

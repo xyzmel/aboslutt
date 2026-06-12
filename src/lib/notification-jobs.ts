@@ -20,8 +20,11 @@ type JobResult = {
   ok: true;
   dryRun: boolean;
   usersChecked: number;
+  activeSubscriptionsChecked: number;
+  dueReminders: number;
   emailsSent: number;
   remindersCreated: number;
+  skippedReasons: Record<string, number>;
 };
 
 export async function runUpcomingPaymentReminders({
@@ -31,13 +34,14 @@ export async function runUpcomingPaymentReminders({
   return runLoggedJob("upcoming_payment_reminders", dryRun, triggeredByEmail, async () => {
     const users = await prisma.user.findMany({
       where: {
-        emailRemindersEnabled: true,
         email: { not: null },
       },
       select: {
         id: true,
         name: true,
         email: true,
+        emailVerified: true,
+        emailRemindersEnabled: true,
         reminderDaysBefore: true,
         subscriptions: {
           where: { status: { in: activeStatuses } },
@@ -55,18 +59,36 @@ export async function runUpcomingPaymentReminders({
 
     let emailsSent = 0;
     let remindersCreated = 0;
+    let activeSubscriptionsChecked = 0;
+    let dueReminders = 0;
+    const skippedReasons = createSkippedReasons();
     const today = startOfDay(new Date());
+    const todayIsoDate = toIsoDate(today);
 
     for (const user of users) {
       if (!user.email) {
+        skippedReasons.missingEmail += 1;
         continue;
       }
 
-      const targetDate = addDays(today, user.reminderDaysBefore);
-      const targetIsoDate = toIsoDate(targetDate);
+      if (!user.emailVerified) {
+        skippedReasons.unverifiedEmail += 1;
+        continue;
+      }
+
+      if (!user.emailRemindersEnabled) {
+        skippedReasons.remindersDisabled += 1;
+        continue;
+      }
+
       const dueSubscriptions = [];
 
+      if (user.subscriptions.length === 0) {
+        skippedReasons.noActiveSubscriptions += 1;
+      }
+
       for (const subscription of user.subscriptions) {
+        activeSubscriptionsChecked += 1;
         const normalizedNextPayment = normalizeNextPaymentDate({
           nextPayment: subscription.nextPayment,
           billingInterval: subscription.billingInterval as BillingInterval,
@@ -80,7 +102,15 @@ export async function runUpcomingPaymentReminders({
           });
         }
 
-        if (!normalizedNextPayment || normalizedNextPayment !== targetIsoDate) {
+        if (!normalizedNextPayment) {
+          skippedReasons.missingOrInvalidNextPayment += 1;
+          continue;
+        }
+
+        const reminderDate = calculateReminderDate(normalizedNextPayment, user.reminderDaysBefore);
+
+        if (reminderDate !== todayIsoDate) {
+          skippedReasons.notDueToday += 1;
           continue;
         }
 
@@ -95,9 +125,11 @@ export async function runUpcomingPaymentReminders({
         });
 
         if (existingReminder) {
+          skippedReasons.alreadySent += 1;
           continue;
         }
 
+        dueReminders += 1;
         dueSubscriptions.push({
           id: subscription.id,
           name: subscription.name,
@@ -144,8 +176,11 @@ export async function runUpcomingPaymentReminders({
       ok: true,
       dryRun,
       usersChecked: users.length,
+      activeSubscriptionsChecked,
+      dueReminders,
       emailsSent,
       remindersCreated,
+      skippedReasons,
     };
   });
 }
@@ -159,6 +194,7 @@ export async function runMonthlySummary({
       where: {
         monthlySummaryEnabled: true,
         email: { not: null },
+        emailVerified: { not: null },
       },
       select: {
         id: true,
@@ -179,6 +215,7 @@ export async function runMonthlySummary({
     });
 
     let emailsSent = 0;
+    let activeSubscriptionsChecked = 0;
     const today = startOfDay(new Date());
     const thirtyDaysFromNow = addDays(today, 30);
 
@@ -190,6 +227,7 @@ export async function runMonthlySummary({
       const normalizedSubscriptions = [];
 
       for (const subscription of user.subscriptions) {
+        activeSubscriptionsChecked += 1;
         const normalizedNextPayment = normalizeNextPaymentDate({
           nextPayment: subscription.nextPayment,
           billingInterval: subscription.billingInterval as BillingInterval,
@@ -247,8 +285,11 @@ export async function runMonthlySummary({
       ok: true,
       dryRun,
       usersChecked: users.length,
+      activeSubscriptionsChecked,
+      dueReminders: users.length,
       emailsSent,
       remindersCreated: 0,
+      skippedReasons: {},
     };
   });
 }
@@ -293,6 +334,30 @@ async function runLoggedJob(
     });
     throw error;
   }
+}
+
+function calculateReminderDate(nextPayment: string, reminderDaysBefore: number) {
+  const paymentDate = parseSubscriptionDate(nextPayment);
+
+  if (!paymentDate) {
+    return null;
+  }
+
+  const reminderDate = new Date(paymentDate);
+  reminderDate.setDate(paymentDate.getDate() - reminderDaysBefore);
+  return toIsoDate(startOfDay(reminderDate));
+}
+
+function createSkippedReasons() {
+  return {
+    missingEmail: 0,
+    unverifiedEmail: 0,
+    remindersDisabled: 0,
+    noActiveSubscriptions: 0,
+    missingOrInvalidNextPayment: 0,
+    notDueToday: 0,
+    alreadySent: 0,
+  };
 }
 
 function getMonthlyEquivalent(subscription: { monthlyCost: number; billingInterval: string }) {
