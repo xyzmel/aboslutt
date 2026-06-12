@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { areBetaSignupsEnabled } from "@/lib/beta";
 import { sessionStrategy } from "@/lib/auth";
+import { isCronConfigured } from "@/lib/cron";
 import { prisma } from "@/lib/prisma";
 import { isSmtpConfigured } from "@/lib/smtp";
 
@@ -18,6 +19,8 @@ export async function GET() {
       environment: process.env.NODE_ENV,
       databaseConnected: true,
       authConfigured,
+      cronConfigured: isCronConfigured(),
+      emailConfigured: isSmtpConfigured(),
       sessionStrategy,
       smtpConfigured: isSmtpConfigured(),
       betaSignupsEnabled: areBetaSignupsEnabled(),
@@ -31,6 +34,8 @@ export async function GET() {
         environment: process.env.NODE_ENV,
         databaseConnected: false,
         authConfigured,
+        cronConfigured: isCronConfigured(),
+        emailConfigured: isSmtpConfigured(),
         sessionStrategy,
         smtpConfigured: isSmtpConfigured(),
         betaSignupsEnabled: areBetaSignupsEnabled(),

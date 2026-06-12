@@ -14,11 +14,15 @@ model User {
   emailVerified DateTime?
   passwordHash  String?
   image         String?
+  emailRemindersEnabled Boolean @default(true)
+  reminderDaysBefore Int @default(3)
+  monthlySummaryEnabled Boolean @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
+  reminderLogs  ReminderLog[]
   sessions      Session[]
   subscriptions Subscription[]
 }
@@ -99,10 +103,27 @@ model Subscription {
   updatedAt   DateTime @updatedAt
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderLogs ReminderLog[]
 
   @@index([userId])
   @@index([normalizedName])
   @@index([category])
   @@index([status])
   @@index([billingInterval])
+}
+
+model ReminderLog {
+  id             String   @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  reminderDate   String
+  type           String
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([reminderDate])
+  @@unique([userId, subscriptionId, reminderDate, type])
 }

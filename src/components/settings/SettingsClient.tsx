@@ -8,6 +8,9 @@ type SettingsClientProps = {
   email: string | null;
   googleConnected: boolean;
   gmailScopeConnected: boolean;
+  emailRemindersEnabled: boolean;
+  reminderDaysBefore: number;
+  monthlySummaryEnabled: boolean;
 };
 
 export function SettingsClient({
@@ -15,9 +18,17 @@ export function SettingsClient({
   email,
   googleConnected,
   gmailScopeConnected,
+  emailRemindersEnabled,
+  reminderDaysBefore,
+  monthlySummaryEnabled,
 }: SettingsClientProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
+  const [notificationForm, setNotificationForm] = useState({
+    emailRemindersEnabled,
+    reminderDaysBefore,
+    monthlySummaryEnabled,
+  });
 
   async function deleteAllSubscriptions() {
     if (!window.confirm("Vil du slette alle abonnementene dine?")) {
@@ -62,6 +73,37 @@ export function SettingsClient({
       setMessage(error instanceof Error ? error.message : "Kunne ikke slette kontodata.");
       setIsWorking(false);
     }
+  }
+
+  async function saveNotificationPreferences(nextForm = notificationForm) {
+    setIsWorking(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/account/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(nextForm),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error ?? "Kunne ikke lagre varselinnstillinger.");
+      }
+
+      setNotificationForm(result.preferences);
+      setMessage("Varselinnstillinger er lagret.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunne ikke lagre varselinnstillinger.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
+  function updateNotificationForm(update: Partial<typeof notificationForm>) {
+    const nextForm = { ...notificationForm, ...update };
+    setNotificationForm(nextForm);
+    saveNotificationPreferences(nextForm);
   }
 
   return (
@@ -120,6 +162,70 @@ export function SettingsClient({
             Full tilbakekalling hos Google er ikke implementert ennå. Du kan fjerne
             tilgangen i Google-kontoen din under tredjepartstilganger.
           </p>
+        </section>
+
+        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+          <h2 className="text-lg font-extrabold tracking-tight">Varsler</h2>
+          <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
+            Få e-post før kommende abonnementstrekk og en valgfri månedlig oversikt.
+          </p>
+          <div className="mt-5 grid gap-4">
+            <label className="flex items-start justify-between gap-4 rounded-xl bg-[#F7F9FC] p-4 text-sm">
+              <span>
+                <span className="block font-bold text-[#0D1B2A]">
+                  Varsle meg før kommende trekk
+                </span>
+                <span className="mt-1 block text-[#5F6F82]">
+                  Sender en e-post før datoen du har lagt inn på abonnementet.
+                </span>
+              </span>
+              <input
+                checked={notificationForm.emailRemindersEnabled}
+                className="mt-1 h-5 w-5 accent-[#C8102E]"
+                disabled={isWorking}
+                onChange={(event) =>
+                  updateNotificationForm({ emailRemindersEnabled: event.target.checked })
+                }
+                type="checkbox"
+              />
+            </label>
+
+            <label className="text-sm font-semibold text-[#4A5568]">
+              Send påminnelse
+              <select
+                className="mt-2 w-full rounded-xl border border-[#DBE4EE] bg-white px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+                disabled={isWorking || !notificationForm.emailRemindersEnabled}
+                onChange={(event) =>
+                  updateNotificationForm({ reminderDaysBefore: Number(event.target.value) })
+                }
+                value={notificationForm.reminderDaysBefore}
+              >
+                <option value={1}>1 dag før</option>
+                <option value={3}>3 dager før</option>
+                <option value={7}>7 dager før</option>
+              </select>
+            </label>
+
+            <label className="flex items-start justify-between gap-4 rounded-xl bg-[#F7F9FC] p-4 text-sm">
+              <span>
+                <span className="block font-bold text-[#0D1B2A]">
+                  Send månedlig oppsummering
+                </span>
+                <span className="mt-1 block text-[#5F6F82]">
+                  Gir en enkel oversikt over aktive abonnementer og kommende trekk.
+                </span>
+              </span>
+              <input
+                checked={notificationForm.monthlySummaryEnabled}
+                className="mt-1 h-5 w-5 accent-[#C8102E]"
+                disabled={isWorking}
+                onChange={(event) =>
+                  updateNotificationForm({ monthlySummaryEnabled: event.target.checked })
+                }
+                type="checkbox"
+              />
+            </label>
+          </div>
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">

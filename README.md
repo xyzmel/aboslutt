@@ -254,6 +254,51 @@ Slik tester du session-håndtering:
 - Utlogget `/dashboard`, `/settings`, `/import/email` og `/subscriptions/[id]` skal sende brukeren til `/login`.
 - Innlogget `/dashboard` skal vise riktig bruker og bare brukerens egne abonnementer.
 
+## Notifications And Cron Jobs
+
+Aboslutt kan sende e-postvarsler før kommende abonnementstrekk. Brukeren styrer dette fra `/settings` under `Varsler`:
+
+- `Varsle meg før kommende trekk`
+- påminnelse `1`, `3` eller `7` dager før
+- `Send månedlig oppsummering`
+
+Påminnelser bruker bare lagrede abonnementer og `nextPayment`. Rå Gmail- eller e-postinnhold sendes eller lagres ikke.
+
+Legg til i Vercel:
+
+```bash
+CRON_SECRET=lag-en-lang-tilfeldig-verdi
+```
+
+Ikke eksponer `CRON_SECRET` i frontend eller logger. Vercel Cron treffer:
+
+- `POST /api/jobs/send-reminders` daglig kl. 06:00 UTC
+- `POST /api/jobs/send-monthly-summary` den 1. hver måned kl. 07:00 UTC
+
+Begge rutene krever:
+
+```http
+Authorization: Bearer CRON_SECRET
+```
+
+Lokal test med PowerShell:
+
+```powershell
+$env:CRON_SECRET="local-test-secret"
+npm run dev
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/jobs/send-reminders" -Headers @{ Authorization = "Bearer local-test-secret" }
+Invoke-RestMethod -Method Post -Uri "http://localhost:3000/api/jobs/send-monthly-summary" -Headers @{ Authorization = "Bearer local-test-secret" }
+```
+
+Produksjonstest etter deploy:
+
+```powershell
+Invoke-RestMethod -Method Post -Uri "https://www.aboslutt.no/api/jobs/send-reminders" -Headers @{ Authorization = "Bearer <CRON_SECRET>" }
+Invoke-RestMethod -Method Post -Uri "https://www.aboslutt.no/api/jobs/send-monthly-summary" -Headers @{ Authorization = "Bearer <CRON_SECRET>" }
+```
+
+`/api/health` viser `cronConfigured` og `emailConfigured` som trygge booleans uten å lekke verdier.
+
 ## Email Og Gmail Import
 
 `/import/email` har to flyter:

@@ -36,9 +36,12 @@ export default async function SettingsPage() {
 
       <SettingsClient
         email={currentUser.email}
+        emailRemindersEnabled={currentUser.emailRemindersEnabled}
         gmailScopeConnected={gmailScopeConnected}
         googleConnected={Boolean(googleAccount)}
+        monthlySummaryEnabled={currentUser.monthlySummaryEnabled}
         name={currentUser.name}
+        reminderDaysBefore={currentUser.reminderDaysBefore}
       />
     </main>
   );
