@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { AdminForbiddenError, requireAdminUser } from "@/lib/admin";
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
@@ -52,24 +52,7 @@ export default async function AdminAuditPage() {
 function AdminAuditScreen({ auditLogs }: { auditLogs: AuditLogRow[] }) {
   return (
     <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-      <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <Link className="text-xl font-extrabold tracking-tight" href="/admin">
-            Abo<span className="text-[#C8102E]">slutt</span> Admin
-          </Link>
-          <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-            <Link className="text-white/60 hover:text-white" href="/admin">
-              Admin
-            </Link>
-            <Link className="text-white/60 hover:text-white" href="/admin/jobs">
-              Jobber
-            </Link>
-            <Link className="text-white/60 hover:text-white" href="/dashboard">
-              Oversikt
-            </Link>
-          </nav>
-        </div>
-      </header>
+      <AppHeader adminSection maxWidthClassName="max-w-7xl" />
 
       <section className="mx-auto max-w-7xl px-5 py-8">
         <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Admin</p>

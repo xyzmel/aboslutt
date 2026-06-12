@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminUserActions } from "@/components/admin/AdminUserActions";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { AdminForbiddenError, requireAdminUser } from "@/lib/admin";
 import { formatSubscriptionDateForDisplay } from "@/lib/subscription-dates";
 import { prisma } from "@/lib/prisma";
@@ -70,16 +71,7 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
 
     return (
       <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-        <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-            <Link className="text-xl font-extrabold tracking-tight" href="/admin">
-              Abo<span className="text-[#C8102E]">slutt</span> Admin
-            </Link>
-            <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/admin">
-              Til admin
-            </Link>
-          </div>
-        </header>
+        <AppHeader adminSection />
 
         <section className="mx-auto max-w-6xl px-5 py-8">
           <Link className="text-sm font-bold text-[#C8102E] hover:underline" href="/admin">

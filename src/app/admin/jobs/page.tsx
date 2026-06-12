@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/error-boundaries */
 import Link from "next/link";
 import { AdminJobsClient } from "@/components/admin/AdminJobsClient";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { AdminForbiddenError, requireAdminUser } from "@/lib/admin";
 import { isCronConfigured } from "@/lib/cron";
 import { prisma } from "@/lib/prisma";
@@ -36,22 +37,7 @@ export default async function AdminJobsPage() {
 
     return (
       <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-        <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-            <Link className="text-xl font-extrabold tracking-tight" href="/admin">
-              Abo<span className="text-[#C8102E]">slutt</span> Admin
-            </Link>
-            <nav className="flex items-center gap-3 text-sm font-semibold">
-              <span className="hidden text-white/45 sm:inline">{adminUser.email}</span>
-              <Link className="text-white/60 hover:text-white" href="/admin">
-                Admin
-              </Link>
-              <Link className="text-white/60 hover:text-white" href="/settings">
-                Innstillinger
-              </Link>
-            </nav>
-          </div>
-        </header>
+        <AppHeader adminSection maxWidthClassName="max-w-5xl" />
 
         <section className="mx-auto max-w-5xl px-5 py-8">
           <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Admin</p>

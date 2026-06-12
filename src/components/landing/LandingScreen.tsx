@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
 const featureSections = [
@@ -84,7 +84,7 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
     <main className="min-h-screen bg-[#0D1B2A] text-white">
       <section className="relative overflow-hidden px-5 py-8 sm:py-10">
         <div className="relative z-10 mx-auto w-full max-w-6xl">
-          <PublicHeader user={user} />
+          <PublicHeader />
 
           <div className="grid gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
             <div>
@@ -178,49 +178,6 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
 
       <PublicFooter />
     </main>
-  );
-}
-
-function PublicHeader({ user }: { user: LandingScreenProps["user"] }) {
-  return (
-    <header className="flex items-center justify-between gap-4">
-      <Link className="inline-flex items-center gap-3" href="/">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C8102E] text-lg font-black text-white">
-          A
-        </div>
-        <span className="text-2xl font-extrabold tracking-tight text-white">
-          Abo<span className="text-[#C8102E]">slutt</span>
-        </span>
-      </Link>
-      {user ? (
-        <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-          <HeaderLink href="/dashboard">Oversikt</HeaderLink>
-          <HeaderLink href="/import/email">Importer e-post</HeaderLink>
-          <HeaderLink href="/settings">Innstillinger</HeaderLink>
-          {user.isAdmin ? <HeaderLink href="/admin">Admin</HeaderLink> : null}
-          <button className="text-white/60 hover:text-white" onClick={() => signOut({ callbackUrl: "/login" })} type="button">
-            Logg ut
-          </button>
-        </nav>
-      ) : (
-        <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-          <HeaderLink href="#produkt">Produkt</HeaderLink>
-          <HeaderLink href="/pricing">Priser</HeaderLink>
-          <HeaderLink href="/login">Logg inn</HeaderLink>
-          <Link className="rounded-xl bg-[#C8102E] px-4 py-2 text-white hover:bg-[#a90d27]" href="/register">
-            Opprett konto
-          </Link>
-        </nav>
-      )}
-    </header>
-  );
-}
-
-function HeaderLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link className="text-white/60 hover:text-white" href={href}>
-      {children}
-    </Link>
   );
 }
 

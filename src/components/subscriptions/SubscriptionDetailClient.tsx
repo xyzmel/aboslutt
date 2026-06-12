@@ -1,8 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { formatNextPaymentDate, normalizeDateInputValue } from "@/lib/subscription-date";
 import type {
   BillingInterval,
@@ -126,16 +126,7 @@ export function SubscriptionDetailClient({
 
   return (
     <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-      <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
-          <Link className="text-xl font-extrabold tracking-tight" href="/dashboard">
-            Abo<span className="text-[#C8102E]">slutt</span>
-          </Link>
-          <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/dashboard">
-            Til oversikten
-          </Link>
-        </div>
-      </header>
+      <AppHeader maxWidthClassName="max-w-4xl" />
 
       <section className="mx-auto max-w-4xl px-5 py-8">
         {errorMessage ? (

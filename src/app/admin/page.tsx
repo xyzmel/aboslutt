@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/error-boundaries */
 import Link from "next/link";
 import { AdminBetaRequestActions, AdminFeedbackActions } from "@/components/admin/AdminReviewActions";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { AdminForbiddenError, requireAdminUser } from "@/lib/admin";
 import { sessionStrategy } from "@/lib/auth";
 import { isCronConfigured } from "@/lib/cron";
@@ -157,7 +158,7 @@ export default async function AdminPage() {
 
     return (
       <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
-        <AdminHeader adminEmail={adminUser.email} />
+        <AppHeader adminSection maxWidthClassName="max-w-7xl" />
 
         <section className="mx-auto max-w-7xl px-5 py-8">
           <div>
@@ -303,33 +304,6 @@ export default async function AdminPage() {
     logAdminError("admin:data", error, adminUser.id);
     return <AdminLoadError />;
   }
-}
-
-function AdminHeader({ adminEmail }: { adminEmail: string | null }) {
-  return (
-    <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <Link className="text-xl font-extrabold tracking-tight" href="/dashboard">
-          Abo<span className="text-[#C8102E]">slutt</span>
-        </Link>
-        <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-          <span className="hidden text-white/45 sm:inline">{adminEmail}</span>
-          <Link className="text-white/60 hover:text-white" href="/dashboard">
-            Oversikt
-          </Link>
-          <Link className="text-white/60 hover:text-white" href="/admin/jobs">
-            Jobber
-          </Link>
-          <Link className="text-white/60 hover:text-white" href="/admin/audit">
-            Audit
-          </Link>
-          <Link className="text-white/60 hover:text-white" href="/settings">
-            Innstillinger
-          </Link>
-        </nav>
-      </div>
-    </header>
-  );
 }
 
 function MetricCard({ label, value }: { label: string; value: string }) {

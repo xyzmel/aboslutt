@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { BetaRequestForm } from "@/components/beta/BetaRequestForm";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
-import { isAdminUser } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 
 const plans = [
@@ -45,43 +45,11 @@ const plans = [
 
 export default async function PricingPage() {
   const session = await getServerSession(authOptions);
-  const user = session?.user
-    ? {
-        email: session.user.email ?? null,
-        isAdmin: isAdminUser({ email: session.user.email ?? null }),
-      }
-    : null;
+  const user = session?.user ? { email: session.user.email ?? null } : null;
 
   return (
     <main className="min-h-screen bg-[#0D1B2A] text-white">
-      <header className="px-5 py-6">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <Link className="inline-flex items-center gap-3" href="/">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C8102E] text-lg font-black text-white">
-              A
-            </div>
-            <span className="text-2xl font-extrabold tracking-tight text-white">
-              Abo<span className="text-[#C8102E]">slutt</span>
-            </span>
-          </Link>
-          {user ? (
-            <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-              <HeaderLink href="/dashboard">Oversikt</HeaderLink>
-              <HeaderLink href="/import/email">Importer e-post</HeaderLink>
-              <HeaderLink href="/settings">Innstillinger</HeaderLink>
-              {user.isAdmin ? <HeaderLink href="/admin">Admin</HeaderLink> : null}
-            </nav>
-          ) : (
-            <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-              <HeaderLink href="/#produkt">Produkt</HeaderLink>
-              <HeaderLink href="/login">Logg inn</HeaderLink>
-              <Link className="rounded-xl bg-[#C8102E] px-4 py-2 text-white hover:bg-[#a90d27]" href="/register">
-                Opprett konto
-              </Link>
-            </nav>
-          )}
-        </div>
-      </header>
+      <PublicHeader />
 
       <section className="px-5 py-14">
         <div className="mx-auto max-w-6xl">
@@ -166,14 +134,6 @@ export default async function PricingPage() {
 
       <PublicFooter />
     </main>
-  );
-}
-
-function HeaderLink({ href, children }: { href: string; children: ReactNode }) {
-  return (
-    <Link className="text-white/60 hover:text-white" href={href}>
-      {children}
-    </Link>
   );
 }
 

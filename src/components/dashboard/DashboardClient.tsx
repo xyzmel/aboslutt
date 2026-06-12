@@ -2,11 +2,11 @@
 
 import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellation";
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
-import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { AppHeader } from "@/components/navigation/AppHeader";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
 import {
@@ -78,7 +78,7 @@ const billingIntervalOptions: [BillingInterval, string][] = [
 ];
 
 export function DashboardClient() {
-  const { data: session, status: sessionStatus } = useSession();
+  const { data: session } = useSession();
   const [subscriptionList, setSubscriptionList] = useState<Subscription[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<CategoryFilter>("all");
@@ -91,7 +91,6 @@ export function DashboardClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [currentPlan, setCurrentPlan] = useState("free");
   const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
   const [hasGoogleGmailConnected, setHasGoogleGmailConnected] = useState(false);
@@ -113,9 +112,8 @@ export function DashboardClient() {
         const meResponse = await fetch("/api/me", { cache: "no-store" });
         if (meResponse.ok) {
           const meResult = (await meResponse.json()) as {
-            user?: { isAdmin?: boolean; plan?: string; emailRemindersEnabled?: boolean };
+            user?: { plan?: string; emailRemindersEnabled?: boolean };
           };
-          setIsAdmin(Boolean(meResult.user?.isAdmin));
           setCurrentPlan(meResult.user?.plan ?? "free");
           setEmailRemindersEnabled(Boolean(meResult.user?.emailRemindersEnabled));
         }
@@ -173,9 +171,6 @@ export function DashboardClient() {
     !hasGoogleGmailConnected ||
     totalMonthlyCost <= 0;
   const isDevelopment = process.env.NODE_ENV !== "production";
-  const isSessionLoading = sessionStatus === "loading";
-  const userLabel = session?.user?.name ?? session?.user?.email ?? (isDevelopment ? "Lokal dev" : "");
-  const userInitials = getUserInitials(session?.user?.name, session?.user?.email);
 
   function toggleSubscription(id: string) {
     setSelectedIds((currentIds) =>
@@ -339,70 +334,7 @@ export function DashboardClient() {
 
   return (
     <main className="min-h-screen bg-[#F0F4F8] pb-28 text-[#0D1B2A]">
-      <header className="bg-[#0D1B2A] px-5 py-6 text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <Link className="text-xl font-extrabold tracking-tight" href="/">
-            Abo<span className="text-[#C8102E]">slutt</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              className="text-sm font-semibold text-white/60 hover:text-white"
-              href="/import/email"
-            >
-              Importer e-post
-            </Link>
-            <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/connect">
-              Koble til mer
-            </Link>
-            <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/settings">
-              Innstillinger
-            </Link>
-            {isAdmin ? (
-              <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/admin">
-                Admin
-              </Link>
-            ) : null}
-            {isSessionLoading ? (
-              <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/70">
-                Henter bruker...
-              </div>
-            ) : session ? (
-              <div className="flex items-center gap-2 rounded-full bg-white/10 py-1.5 pl-1.5 pr-3">
-                <div className="flex h-8 min-w-8 items-center justify-center rounded-full bg-[#C8102E] px-2 text-xs font-black text-white">
-                  {userInitials}
-                </div>
-                <span className="hidden max-w-40 truncate text-sm font-semibold text-white/80 sm:block">
-                  {userLabel}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/login">
-                  Logg inn
-                </Link>
-                <Link
-                  className="rounded-xl bg-[#C8102E] px-4 py-2 text-sm font-bold text-white hover:bg-[#a90d27]"
-                  href="/register"
-                >
-                  Opprett konto
-                </Link>
-              </div>
-            )}
-            {session ? (
-              <FeedbackButton page="/dashboard" />
-            ) : null}
-            {session ? (
-              <button
-                className="text-sm font-semibold text-white/60 hover:text-white"
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                type="button"
-              >
-                Logg ut
-              </button>
-            ) : null}
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
       <section className="mx-auto max-w-6xl px-5 py-8">
         {errorMessage ? (
@@ -668,23 +600,6 @@ export function DashboardClient() {
       ) : null}
     </main>
   );
-}
-
-function getUserInitials(name?: string | null, email?: string | null) {
-  if (!name && !email) {
-    return "AB";
-  }
-
-  const source = name ?? email ?? "";
-  const parts = source
-    .replace("@", " ")
-    .split(" ")
-    .filter(Boolean);
-
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
 }
 
 function SummaryCard({ label, value }: { label: string; value: string }) {

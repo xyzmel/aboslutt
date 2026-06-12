@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
 type PublicPageShellProps = {
@@ -11,12 +11,10 @@ type PublicPageShellProps = {
 export function PublicPageShell({ title, intro, children }: PublicPageShellProps) {
   return (
     <main className="min-h-screen bg-[#0D1B2A] text-white">
+      <PublicHeader maxWidthClassName="max-w-3xl" />
       <section className="px-5 py-10">
         <div className="mx-auto w-full max-w-3xl">
-          <Link className="text-sm font-semibold text-white/55 hover:text-white" href="/">
-            Tilbake til Aboslutt
-          </Link>
-          <div className="mt-10 rounded-2xl bg-white p-6 text-[#0D1B2A] shadow-2xl shadow-black/20 sm:p-8">
+          <div className="rounded-2xl bg-white p-6 text-[#0D1B2A] shadow-2xl shadow-black/20 sm:p-8">
             <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
               Aboslutt
             </p>
