@@ -91,11 +91,11 @@ Vipps-provideren registreres bare når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` 
 
 ## Planer Og Prising
 
-Manuell abonnementssporing er gratis å starte med. Automatisk skanning, varsler og oppsummeringer er beta-/SaaS-funksjoner, og premium-betaling er ikke aktivert ennå.
+Manuell abonnementssporing er gratis å starte med. Brukere kan legge inn abonnementer selv uten Gmail eller andre integrasjoner. Automatisk Gmail-/e-postskanning, varsler og oppsummeringer er beta-/SaaS-funksjoner, og premium-betaling er ikke aktivert ennå.
 
-- `Gratis`: manuell abonnementssporing, opptil 10 abonnementer, månedlig/årlig oversikt og grunnleggende dashboard.
-- `Beta`: alt i Gratis, Gmail-skanning, e-postpåminnelser og månedlig oppsummering. Gratis for utvalgte tidlige brukere.
-- `Premium`: samme funksjonsnivå som Beta akkurat nå, med ubegrensede abonnementer, Gmail-skanning, varsler og månedlig oppsummering. Betaling er ikke implementert ennå.
+- `Gratis`: 0 kr, opptil 10 manuelle abonnementer, månedlig/årlig oversikt og grunnleggende dashboard.
+- `Beta`: gratis for utvalgte tidlige brukere, ubegrensede abonnementer, Gmail-skanning, e-postpåminnelser og månedlig oppsummering.
+- `Premium`: kommer senere med automatisk skanning, varsler, innsikt, fremtidige bank/Open Banking-funksjoner og fremtidig hjelp til oppsigelse. Betaling er ikke implementert ennå.
 - `Admin`: alt aktivert for intern administrasjon og testing.
 
 Planlogikken ligger i `src/lib/plans.ts`. Backend håndhever at Gratis-brukere kan legge til maks 10 abonnementer, men de kan fortsatt se, redigere og slette eksisterende abonnementer. Gratis-brukere får ikke bruke Gmail-skanning, e-postvarsler eller månedlig oppsummering. Admin kan endre brukerplan fra `/admin/users/[id]`.

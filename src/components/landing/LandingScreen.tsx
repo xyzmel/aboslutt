@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { PublicFooter } from "@/components/public/PublicFooter";
@@ -10,35 +11,36 @@ const featureSections = [
     title: "Manuell oversikt",
     eyebrow: "Gratis å starte",
     description:
-      "Legg inn abonnementene du allerede kjenner. Følg pris, kategori, intervall og neste trekk uten å koble til Gmail.",
-    points: ["Legg til eksisterende abonnementer selv", "Se månedlig og årlig kostnad", "Hold oversikten uten integrasjoner"],
+      "Legg inn abonnementene du allerede kjenner selv. Aboslutt gir deg en ryddig oversikt uten at du må koble til Gmail eller andre integrasjoner.",
+    points: ["Opptil 10 abonnementer gratis", "Følg pris, dato og kategori", "Månedlig og årlig oversikt"],
   },
   {
     title: "Automatisk skanning",
-    eyebrow: "Beta/SaaS",
+    eyebrow: "Beta/premium",
     description:
-      "Skann Gmail eller lim inn kvitteringer for å få forslag. Du bekrefter alltid kandidaten før noe lagres.",
-    points: ["Gmail read-only", "Forslag må godkjennes", "Rå e-postinnhold lagres ikke"],
+      "Skann Gmail eller lim inn kvitteringer for å få forslag til abonnementer. Du redigerer og bekrefter alltid kandidaten før noe lagres.",
+    points: ["Gmail- og e-postkvitteringer", "Bekreft før lagring", "Valgfri SaaS-funksjon"],
   },
   {
     title: "Varsler",
-    eyebrow: "Beta/SaaS",
+    eyebrow: "Beta/premium",
     description:
-      "Få e-post før kommende trekk og en enkel månedlig oppsummering når du ønsker mer hjelp til å følge med.",
-    points: ["Påminnelser før trekk", "Månedlig oppsummering", "Basert på abonnementer du har lagret"],
+      "Få e-post før kommende trekk og en enkel månedlig oppsummering basert på abonnementene du selv har lagret.",
+    points: ["Påminnelser før trekk", "Månedlig oppsummering", "Basert på lagrede abonnementer"],
   },
   {
     title: "Trygghet og personvern",
     eyebrow: "Du bestemmer",
     description:
-      "Aboslutt lagrer bare abonnementene du selv legger inn eller bekrefter. Du kan slette data fra innstillinger.",
-    points: ["Brukeren kontrollerer hva som lagres", "Ingen rå Gmail-tekst lagres", "Slett data når du vil"],
+      "Aboslutt bruker Gmail read-only for skanning og lagrer ikke rå e-postinnhold. Du kontrollerer hva som blir lagret.",
+    points: ["Gmail read-only", "Rå e-post lagres ikke", "Slett data i innstillinger"],
   },
   {
     title: "Vipps Login",
     eyebrow: "Norsk innlogging",
     description: "Logg inn raskt med Vipps når du ønsker det. E-post/passord og Google fungerer fortsatt.",
     points: ["Fortsett med Vipps", "Samme Aboslutt-konto", "Rask inngang til oversikten"],
+    vipps: true,
   },
 ];
 
@@ -47,20 +49,20 @@ const plans = [
     name: "Gratis",
     price: "0 kr",
     description: "For deg som vil starte med manuell abonnementskontroll.",
-    features: ["Manuell abonnementssporing", "Opptil 10 abonnementer", "Månedlig/årlig oversikt", "Grunnleggende dashboard"],
+    features: ["Opptil 10 abonnementer", "Manuell sporing", "Månedlig/årlig oversikt", "Grunnleggende dashboard"],
   },
   {
     name: "Beta",
     price: "Gratis for utvalgte",
     description: "For tidlige brukere som tester automatiske funksjoner.",
-    features: ["Alt i Gratis", "Gmail-skanning", "E-postpåminnelser", "Månedlig oppsummering"],
+    features: ["Ubegrensede abonnementer", "Gmail-skanning", "E-postpåminnelser", "Månedlig oppsummering"],
     highlighted: true,
   },
   {
     name: "Premium",
     price: "Kommer senere",
-    description: "Betalt plan er ikke aktiv ennå.",
-    features: ["Ubegrensede abonnementer", "Automatisk skanning", "Varsler og innsikt", "Fremtidige bank/Open Banking-funksjoner"],
+    description: "Betalt plan er planlagt, men betaling er ikke aktivert ennå.",
+    features: ["Automatisk skanning", "Varsler og innsikt", "Fremtidig bank/Open Banking", "Fremtidig hjelp til oppsigelse"],
   },
 ];
 
@@ -93,8 +95,9 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
                 Få kontroll på abonnementene dine
               </h1>
               <p className="mt-5 max-w-2xl text-base leading-7 text-white/68">
-                Aboslutt hjelper deg å holde oversikt manuelt først. Når du vil, kan du bruke automatisk skanning av
-                Gmail eller e-postkvitteringer for å finne abonnementer raskere.
+                Aboslutt hjelper deg å holde oversikt manuelt først: legg inn abonnementer selv, følg kostnad,
+                kategori og neste trekk. Automatisk Gmail- og e-postskanning er en valgfri beta-/SaaS-funksjon
+                for deg som vil finne abonnementer raskere.
               </p>
               {user ? (
                 <p className="mt-4 text-sm font-semibold text-white/70">
@@ -119,9 +122,9 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
 
             <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20">
               <div className="grid gap-3">
-                <HeroSignal title="Manuell tracking" text="Legg inn abonnementer selv, uten Gmail." />
-                <HeroSignal title="Valgfri skanning" text="Gmail-forslag må bekreftes før lagring." />
-                <HeroSignal title="Varsler" text="Få e-post før kommende trekk." />
+                <HeroSignal title="Manuell oversikt" text="Gratis å starte, opptil 10 abonnementer." />
+                <HeroSignal title="Valgfri skanning" text="Gmail- og e-postforslag må bekreftes før lagring." />
+                <HeroSignal title="Varsler" text="Beta/premium: e-post før trekk og månedlig oppsummering." />
                 <HeroSignal
                   title="Vipps Login"
                   text={
@@ -156,6 +159,10 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
             <div>
               <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Priser</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Planer for beta</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-white/68">
+                Manuell sporing er gratis. Automatisk skanning, varsler og oppsummeringer er SaaS-funksjoner
+                for beta og fremtidig premium.
+              </p>
             </div>
             <Link className="text-sm font-bold text-white/70 hover:text-white" href="/pricing">
               Se alle planer
@@ -247,15 +254,22 @@ function FeatureCard({
   eyebrow,
   description,
   points,
+  vipps,
 }: {
   title: string;
   eyebrow: string;
   description: string;
   points: string[];
+  vipps?: boolean;
 }) {
   return (
     <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
-      <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">{eyebrow}</p>
+      <div className="flex items-start justify-between gap-3">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">{eyebrow}</p>
+        {vipps ? (
+          <Image alt="" className="h-5 w-auto" height={29} src="/vipps-logo-transparent.png" width={96} />
+        ) : null}
+      </div>
       <h3 className="mt-2 text-xl font-extrabold tracking-tight">{title}</h3>
       <p className="mt-3 text-sm leading-6 text-[#5F6F82]">{description}</p>
       <ul className="mt-4 grid gap-2 text-sm font-semibold text-[#0D1B2A]">
