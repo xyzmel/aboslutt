@@ -2,6 +2,11 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  type CancellationProvider,
+  type CancellationProviderMethod,
+  getCancellationMethodLabel,
+} from "@/data/cancellation-providers";
 import { getCancellationStatusLabel } from "@/lib/cancellation";
 import type { Subscription } from "@/types/subscription";
 
@@ -30,13 +35,16 @@ type CancellationEmailClientProps = {
   currentUserEmail: string | null;
   canSend: boolean;
   initialRequest: CancellationRequestView | null;
+  provider: CancellationProvider | null;
 };
 
 type DraftForm = {
   customerName: string;
   customerEmail: string;
   customerNumber: string;
+  extraNote: string;
   recipientEmail: string;
+  method: CancellationProviderMethod;
   subject: string;
   body: string;
 };
@@ -47,9 +55,11 @@ export function CancellationEmailClient({
   currentUserEmail,
   canSend,
   initialRequest,
+  provider,
 }: CancellationEmailClientProps) {
+  const initialMethod = getInitialMethod(initialRequest?.method, provider);
   const generatedDraft = useMemo(
-    () => createLocalDraft(subscription.name, currentUserName ?? "", currentUserEmail ?? "", ""),
+    () => createLocalDraft(subscription.name, currentUserName ?? "", currentUserEmail ?? "", "", ""),
     [currentUserEmail, currentUserName, subscription.name],
   );
   const [request, setRequest] = useState(initialRequest);
@@ -57,7 +67,9 @@ export function CancellationEmailClient({
     customerName: initialRequest?.customerName ?? currentUserName ?? "",
     customerEmail: initialRequest?.customerEmail ?? currentUserEmail ?? "",
     customerNumber: initialRequest?.customerNumber ?? "",
-    recipientEmail: initialRequest?.recipientEmail ?? "",
+    extraNote: "",
+    recipientEmail: initialRequest?.recipientEmail ?? provider?.cancellationEmail ?? "",
+    method: initialMethod,
     subject: initialRequest?.subject ?? generatedDraft.subject,
     body: initialRequest?.body ?? generatedDraft.body,
   });
@@ -65,20 +77,26 @@ export function CancellationEmailClient({
   const [message, setMessage] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
   const statusLabel = getCancellationStatusLabel(request?.status);
+  const canSendEmailMethod = form.method === "email" && Boolean(form.recipientEmail);
+  const showManualPrimary = form.method !== "email";
 
   function updateForm(field: keyof DraftForm, value: string) {
     setForm((current) => {
       const next = { ...current, [field]: value };
-      if (["customerName", "customerEmail", "customerNumber"].includes(field)) {
+      if (field === "method" && value !== "email") {
+        next.recipientEmail = current.recipientEmail;
+      }
+      if (["customerName", "customerEmail", "customerNumber", "extraNote"].includes(field)) {
         const nextDraft = createLocalDraft(
           subscription.name,
           next.customerName,
           next.customerEmail,
           next.customerNumber,
+          next.extraNote,
         );
         return { ...next, subject: next.subject || nextDraft.subject, body: nextDraft.body };
       }
-      return next;
+      return next as DraftForm;
     });
   }
 
@@ -100,7 +118,7 @@ export function CancellationEmailClient({
       }
 
       setRequest(result.request);
-      setMessage("Utkastet er lagret. Kontroller teksten før du sender.");
+      setMessage("Utkastet er lagret. Kontroller teksten før du sender eller bruker leverandørens anbefalte metode.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Kunne ikke lagre utkastet.");
     } finally {
@@ -111,6 +129,11 @@ export function CancellationEmailClient({
   async function sendEmail() {
     if (!request) {
       setMessage("Lagre utkastet før du sender.");
+      return;
+    }
+
+    if (!canSendEmailMethod) {
+      setMessage("Mottakeradresse mangler. Kopier utkastet eller bruk leverandørens anbefalte oppsigelsesmetode.");
       return;
     }
 
@@ -194,8 +217,11 @@ export function CancellationEmailClient({
           <dl className="mt-5 grid gap-3 text-sm">
             <InfoRow label="Potensiell sparing" value={`${subscription.monthlyCost} kr/mnd`} />
             <InfoRow label="Status" value={statusLabel ?? "Ikke sendt"} />
-            <InfoRow label="Metode" value="E-post" />
+            <InfoRow label="Anbefalt metode" value={provider ? getCancellationMethodLabel(provider.method) : "Ukjent"} />
           </dl>
+
+          <ProviderGuidance provider={provider} />
+
           <div className="mt-5 rounded-xl bg-[#FFF6E8] p-4 text-sm leading-6 text-[#8A4B13]">
             Aboslutt sender bare e-post på dine vegne når du godkjenner det. Abonnementet regnes ikke som avsluttet før leverandøren bekrefter det.
           </div>
@@ -211,9 +237,58 @@ export function CancellationEmailClient({
             <div className="grid gap-4 sm:grid-cols-2">
               <TextInput label="Ditt navn" onChange={(value) => updateForm("customerName", value)} required value={form.customerName} />
               <TextInput label="Din e-post" onChange={(value) => updateForm("customerEmail", value)} required type="email" value={form.customerEmail} />
-              <TextInput label="Kundenummer" onChange={(value) => updateForm("customerNumber", value)} value={form.customerNumber} />
-              <TextInput label="Mottaker e-post" onChange={(value) => updateForm("recipientEmail", value)} required type="email" value={form.recipientEmail} />
             </div>
+
+            <label className="text-sm font-semibold text-[#4A5568]">
+              Oppsigelsesmetode
+              <select
+                className="mt-2 w-full rounded-xl border border-[#DBE4EE] bg-white px-4 py-3 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+                onChange={(event) => updateForm("method", event.target.value)}
+                value={form.method}
+              >
+                <option value="email">E-post</option>
+                <option value="account_page">Kontoside</option>
+                <option value="contact_form">Kontaktskjema</option>
+                <option value="chat">Chat</option>
+                <option value="app_store">App Store / Google Play</option>
+                <option value="partner_billing">Partnerfakturering</option>
+                <option value="manual_unknown">Må bekreftes manuelt</option>
+              </select>
+            </label>
+
+            {form.method === "email" ? (
+              <TextInput
+                helperText="Kun bruk e-post hvis leverandøren faktisk aksepterer oppsigelse på e-post."
+                label="Mottaker e-post"
+                onChange={(value) => updateForm("recipientEmail", value)}
+                required
+                type="email"
+                value={form.recipientEmail}
+              />
+            ) : (
+              <ManualMethodBox provider={provider} method={form.method} />
+            )}
+
+            <details className="rounded-xl bg-[#F7F9FC] p-4">
+              <summary className="cursor-pointer text-sm font-extrabold text-[#0D1B2A]">Flere detaljer</summary>
+              <div className="mt-4 grid gap-4">
+                <TextInput
+                  helperText="Valgfritt. Noen leverandører ber om kundenummer, medlemsnummer eller referanse."
+                  label="Kundenummer / medlemsnummer (valgfritt)"
+                  onChange={(value) => updateForm("customerNumber", value)}
+                  value={form.customerNumber}
+                />
+                <label className="text-sm font-semibold text-[#4A5568]">
+                  Ekstra beskjed (valgfritt)
+                  <textarea
+                    className="mt-2 min-h-28 w-full rounded-xl border border-[#DBE4EE] bg-white px-4 py-3 text-sm leading-6 text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+                    onChange={(event) => updateForm("extraNote", event.target.value)}
+                    value={form.extraNote}
+                  />
+                </label>
+              </div>
+            </details>
+
             <TextInput label="Emne" onChange={(value) => updateForm("subject", value)} required value={form.subject} />
             <label className="text-sm font-semibold text-[#4A5568]">
               E-postutkast
@@ -232,8 +307,24 @@ export function CancellationEmailClient({
               <button className="rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold hover:border-[#C8102E]/50" onClick={copyDraft} type="button">
                 Kopier utkast
               </button>
+              {provider?.cancellationUrl ? (
+                <Link
+                  className="rounded-xl bg-[#0D1B2A] px-5 py-3 text-center text-sm font-bold text-white hover:bg-[#13263a]"
+                  href={provider.cancellationUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Åpne oppsigelsesside
+                </Link>
+              ) : null}
             </div>
           </form>
+
+          {showManualPrimary ? (
+            <div className="mt-6 rounded-2xl bg-[#F7F9FC] p-4 text-sm leading-6 text-[#4A5568]">
+              Denne leverandøren ser ut til å kreve at du bruker kontoside, app, chat eller kundeservice. Lagre gjerne utkastet som hjelp, men bruk leverandørens anbefalte metode først.
+            </div>
+          ) : null}
 
           <div className="mt-6 border-t border-[#DBE4EE] pt-5">
             <label className="flex items-start gap-3 rounded-xl bg-[#F7F9FC] p-4 text-sm font-semibold text-[#0D1B2A]">
@@ -247,12 +338,17 @@ export function CancellationEmailClient({
             </label>
             <button
               className="mt-4 w-full rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-50"
-              disabled={!canSend || !request || !consentConfirmed || isWorking}
+              disabled={!canSend || !request || !consentConfirmed || !canSendEmailMethod || isWorking}
               onClick={sendEmail}
               type="button"
             >
               Send oppsigelse via Aboslutt
             </button>
+            {!canSendEmailMethod ? (
+              <p className="mt-2 text-xs font-semibold text-[#5F6F82]">
+                Sending via Aboslutt krever en gyldig mottakeradresse. For denne leverandøren kan oppsigelse via kontoside eller app være riktigere.
+              </p>
+            ) : null}
           </div>
 
           {request ? (
@@ -280,18 +376,67 @@ export function CancellationEmailClient({
   );
 }
 
+function ProviderGuidance({ provider }: { provider: CancellationProvider | null }) {
+  if (!provider) {
+    return (
+      <div className="mt-5 rounded-xl bg-[#F7F9FC] p-4 text-sm leading-6 text-[#4A5568]">
+        Vi fant ikke en trygg oppsigelsesmetode for denne leverandøren ennå. Kontroller mottaker eller bruk leverandørens egne sider.
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-5 rounded-xl bg-[#F7F9FC] p-4 text-sm leading-6 text-[#4A5568]">
+      <p className="font-bold text-[#0D1B2A]">{provider.displayName}</p>
+      <p className="mt-1">{provider.notes}</p>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+        <span className="rounded-full bg-white px-3 py-1 text-[#5F6F82]">
+          {getCancellationMethodLabel(provider.method)}
+        </span>
+        {provider.requiresLogin ? <span className="rounded-full bg-white px-3 py-1 text-[#5F6F82]">Krever innlogging</span> : null}
+        {provider.requiresCustomerNumber ? <span className="rounded-full bg-white px-3 py-1 text-[#5F6F82]">Kundenummer kan være nyttig</span> : null}
+        {provider.confidence === "needs_review" ? <span className="rounded-full bg-[#FFF6E8] px-3 py-1 text-[#8A4B13]">Må kvalitetssikres</span> : null}
+      </div>
+    </div>
+  );
+}
+
+function ManualMethodBox({
+  provider,
+  method,
+}: {
+  provider: CancellationProvider | null;
+  method: CancellationProviderMethod;
+}) {
+  return (
+    <div className="rounded-xl border border-[#DBE4EE] bg-[#F7F9FC] p-4 text-sm leading-6 text-[#4A5568]">
+      <p className="font-bold text-[#0D1B2A]">{getCancellationMethodLabel(method)}</p>
+      <p className="mt-1">
+        E-post er ikke valgt som primær metode. Bruk leverandørens kontoside, app, kontaktskjema eller kundeservice, og kopier utkastet hvis du trenger tekst.
+      </p>
+      {provider?.supportUrl ? (
+        <Link className="mt-3 inline-flex font-bold text-[#C8102E] hover:underline" href={provider.supportUrl} rel="noreferrer" target="_blank">
+          Åpne kundeservice
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
 function TextInput({
   label,
   value,
   onChange,
   type = "text",
   required = false,
+  helperText,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   type?: string;
   required?: boolean;
+  helperText?: string;
 }) {
   return (
     <label className="text-sm font-semibold text-[#4A5568]">
@@ -303,6 +448,7 @@ function TextInput({
         type={type}
         value={value}
       />
+      {helperText ? <span className="mt-1 block text-xs font-medium text-[#5F6F82]">{helperText}</span> : null}
     </label>
   );
 }
@@ -334,9 +480,11 @@ function createLocalDraft(
   customerName: string,
   customerEmail: string,
   customerNumber: string,
+  extraNote: string,
 ) {
   const subject = `Oppsigelse av ${subscriptionName}`;
-  const customerNumberLine = customerNumber ? `Kundenummer/referanse: ${customerNumber}\n` : "";
+  const customerNumberLine = customerNumber ? `Kundenummer/medlemsnummer: ${customerNumber}\n` : "";
+  const extraNoteLine = extraNote ? `\nTilleggsinformasjon:\n${extraNote}\n` : "";
   const body = `Hei,
 
 Jeg ønsker å si opp abonnementet mitt på ${subscriptionName}.
@@ -344,13 +492,32 @@ Jeg ønsker å si opp abonnementet mitt på ${subscriptionName}.
 Navn: ${customerName}
 E-post: ${customerEmail}
 ${customerNumberLine}
+${extraNoteLine}
 Vennligst bekreft skriftlig at abonnementet er avsluttet, og oppgi siste dato for eventuell tilgang eller siste fakturaperiode.
 
 Hilsen
 ${customerName}
 
 --
-Denne oppsigelsen er sendt via Aboslutt etter eksplisitt godkjenning fra kunden.`;
+Denne oppsigelsen er sendt via Aboslutt på vegne av kunden.`;
 
   return { subject, body };
+}
+
+function getInitialMethod(value: string | null | undefined, provider: CancellationProvider | null): CancellationProviderMethod {
+  const allowedMethods: CancellationProviderMethod[] = [
+    "email",
+    "account_page",
+    "contact_form",
+    "chat",
+    "app_store",
+    "partner_billing",
+    "manual_unknown",
+  ];
+
+  if (value && allowedMethods.includes(value as CancellationProviderMethod)) {
+    return value as CancellationProviderMethod;
+  }
+
+  return provider?.method ?? "email";
 }

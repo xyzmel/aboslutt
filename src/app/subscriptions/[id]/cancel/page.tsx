@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { CancellationEmailClient } from "@/components/cancellation/CancellationEmailClient";
 import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
+import { findCancellationProvider } from "@/data/cancellation-providers";
 import { canSendCancellationEmail } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAppUser } from "@/lib/current-user";
@@ -72,6 +73,7 @@ export default async function CancelSubscriptionPage({ params }: CancelPageProps
         currentUserEmail={currentUser.email}
         currentUserName={currentUser.name}
         initialRequest={latestRequest}
+        provider={findCancellationProvider(subscription.name)}
         subscription={toSubscriptionView(subscription)}
       />
       <AppFooter compact />

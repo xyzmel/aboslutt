@@ -35,16 +35,19 @@ export function createCancellationDraft({
   customerName,
   customerEmail,
   customerNumber,
+  extraNote,
 }: {
   subscriptionName: string;
   customerName: string;
   customerEmail: string;
   customerNumber?: string | null;
+  extraNote?: string | null;
 }) {
   const subject = `Oppsigelse av ${subscriptionName}`;
   const customerNumberLine = customerNumber
-    ? `Kundenummer/referanse: ${customerNumber}\n`
+    ? `Kundenummer/medlemsnummer: ${customerNumber}\n`
     : "";
+  const extraNoteLine = extraNote ? `\nTilleggsinformasjon:\n${extraNote}\n` : "";
   const body = `Hei,
 
 Jeg ønsker å si opp abonnementet mitt på ${subscriptionName}.
@@ -52,13 +55,14 @@ Jeg ønsker å si opp abonnementet mitt på ${subscriptionName}.
 Navn: ${customerName}
 E-post: ${customerEmail}
 ${customerNumberLine}
+${extraNoteLine}
 Vennligst bekreft skriftlig at abonnementet er avsluttet, og oppgi siste dato for eventuell tilgang eller siste fakturaperiode.
 
 Hilsen
 ${customerName}
 
 --
-Denne oppsigelsen er sendt via Aboslutt etter eksplisitt godkjenning fra kunden.`;
+Denne oppsigelsen er sendt via Aboslutt på vegne av kunden.`;
 
   return { subject, body };
 }

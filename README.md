@@ -77,6 +77,30 @@ Importkilder vises som brukervennlige merker som `Manuell`, `Gmail` eller `Googl
 
 Gmail- og e-postimport viser en bekreftelsesdialog før lagring. Brukeren kan rette leverandørnavn, beløp, kategori, faktureringsintervall og neste trekk. Hvis et importert månedlig eller ukjent beløp er over 500 NOK, vises varselet `Beløpet virker høyt. Sjekk før du lagrer.`
 
+## Oppsigelsesflyt
+
+Aboslutt har en Level 2-oppsigelsesflyt for beta/premium/admin-brukere. Brukeren kan lage et redigerbart oppsigelsesutkast for et abonnement, kopiere teksten, eller sende e-post via Aboslutt når planen tillater det og brukeren har gitt eksplisitt samtykke.
+
+Viktig produktregel: Aboslutt markerer ikke et abonnement som avsluttet bare fordi en e-post er sendt. Status blir `Venter på bekreftelse` etter sending, og abonnementet blir først markert som avsluttet når brukeren selv velger `Bekreftet avsluttet`.
+
+Gratis-brukere kan lage og kopiere utkast, men kan ikke sende oppsigelsesepost via Aboslutt. Sending via Aboslutt krever beta, premium eller admin.
+
+### Leverandørkatalog
+
+Oppsigelsesflyten bruker en statisk leverandørkatalog i `src/data/cancellation-providers.ts`. Den beskriver kjente eller antatte oppsigelsesmetoder som:
+
+- `account_page`
+- `app_store`
+- `contact_form`
+- `chat`
+- `partner_billing`
+- `manual_unknown`
+- `email`
+
+Katalogen skal være konservativ. Ikke legg inn oppsigelsesepost for en leverandør uten bekreftet kilde. Mange tjenester, som strømmetjenester og app-butikkabonnementer, krever at brukeren avslutter via kontoside, App Store, Google Play eller partnerfakturering. I slike tilfeller viser Aboslutt anbefalt metode og lar brukeren kopiere utkastet, men e-postsending er ikke primærvalget.
+
+Admin kan se katalogen på `/admin/providers`. Full CRUD for leverandørkatalogen er ikke implementert ennå.
+
 ## Auth
 
 Auth-konfigurasjonen ligger i `src/lib/auth.ts`, og route handleren ligger i `src/app/api/auth/[...nextauth]/route.ts`.

@@ -4,6 +4,7 @@ import {
   isCancellationStatus,
   logCancellationAudit,
 } from "@/lib/cancellation";
+import { cancellationProviders } from "@/data/cancellation-providers";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { canSendCancellationEmail } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
@@ -73,17 +74,20 @@ export async function POST(request: Request, context: RouteContext) {
   const customerName = getString(payload.customerName) || currentUser.name || "";
   const customerEmail = getString(payload.customerEmail) || currentUser.email || "";
   const customerNumber = getString(payload.customerNumber);
+  const extraNote = getString(payload.extraNote);
   const recipientEmail = getString(payload.recipientEmail);
+  const method = getCancellationMethod(getString(payload.method));
   const draft = createCancellationDraft({
     subscriptionName: subscription.name,
     customerName,
     customerEmail,
     customerNumber,
+    extraNote,
   });
   const subject = getString(payload.subject) || draft.subject;
   const body = getString(payload.body) || draft.body;
 
-  const validationError = validateDraft({ customerName, customerEmail, recipientEmail, subject, body });
+  const validationError = validateDraft({ customerName, customerEmail, recipientEmail, subject, body, method });
   if (validationError) {
     return validationError;
   }
@@ -93,7 +97,7 @@ export async function POST(request: Request, context: RouteContext) {
       userId: currentUser.id,
       subscriptionId: subscription.id,
       status: "ready",
-      method: "email",
+      method,
       recipientEmail,
       customerName,
       customerEmail,
@@ -197,6 +201,7 @@ async function sendCancellationEmail({
     id: string;
     userId: string;
     subscriptionId: string;
+    method: string;
     recipientEmail: string;
     customerEmail: string;
     subject: string;
@@ -211,6 +216,17 @@ async function sendCancellationEmail({
         message: "Gratis-brukere kan kopiere utkastet, men sending via Aboslutt krever beta eller premium.",
       },
       { status: 403 },
+    );
+  }
+
+  if (cancellationRequest.method !== "email" || !cancellationRequest.recipientEmail || !isEmail(cancellationRequest.recipientEmail)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "MISSING_RECIPIENT",
+        message: "Mottakeradresse mangler. Kopier utkastet eller bruk leverandørens anbefalte oppsigelsesmetode.",
+      },
+      { status: 400 },
     );
   }
 
@@ -263,15 +279,16 @@ function validateDraft(input: {
   recipientEmail: string;
   subject: string;
   body: string;
+  method: string;
 }) {
-  if (!input.customerName || !input.customerEmail || !input.recipientEmail || !input.subject || !input.body) {
+  if (!input.customerName || !input.customerEmail || !input.method || !input.subject || !input.body) {
     return NextResponse.json(
-      { ok: false, error: "INVALID_DRAFT", message: "Fyll inn navn, e-post, mottaker, emne og melding." },
+      { ok: false, error: "INVALID_DRAFT", message: "Fyll inn navn, e-post, metode, emne og melding." },
       { status: 400 },
     );
   }
 
-  if (!isEmail(input.customerEmail) || !isEmail(input.recipientEmail)) {
+  if (!isEmail(input.customerEmail) || (input.method === "email" && !isEmail(input.recipientEmail))) {
     return NextResponse.json(
       { ok: false, error: "INVALID_EMAIL", message: "Kontroller e-postadressene." },
       { status: 400 },
@@ -283,6 +300,10 @@ function validateDraft(input: {
 
 function getString(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function getCancellationMethod(value: string) {
+  return cancellationProviders.some((provider) => provider.method === value) ? value : "email";
 }
 
 function isEmail(value: string) {
