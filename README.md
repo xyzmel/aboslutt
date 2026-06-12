@@ -159,6 +159,17 @@ Produksjon: https://api.vipps.no/access-management-1.0/access/.well-known/openid
 
 Ikke commit Vipps-nøkler. Bruk `.env.local` lokalt og sikre secret-håndtering i hostingmiljøet.
 
+### Vipps Troubleshooting
+
+Hvis Vipps-knappen fortsatt viser `Vipps Login kommer snart`:
+
+- Sjekk at `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` og `VIPPS_WELL_KNOWN_URL` er lagt inn i riktig Vercel-miljo, for eksempel Production og eventuelt Preview.
+- Redeploy prosjektet etter at Vercel env vars er endret.
+- Provider-id i koden er `vipps`, og knappen bruker `signIn("vipps")`.
+- Callback URL hos Vipps skal vaere `https://www.aboslutt.no/api/auth/callback/vipps`.
+- Sjekk `/api/health` og kontroller at `vippsConfigured` er `true`.
+- Sjekk `/api/auth/providers` og kontroller at `vipps` finnes i provider-listen.
+
 ## Google Cloud Setup
 
 For lokal Gmail-skanning:

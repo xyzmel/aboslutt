@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isVippsConfigured } from "@/lib/auth-config-status";
 import { areBetaSignupsEnabled } from "@/lib/beta";
 import { sessionStrategy } from "@/lib/auth";
 import { isCronConfigured } from "@/lib/cron";
@@ -7,9 +8,7 @@ import { isSmtpConfigured } from "@/lib/smtp";
 
 export async function GET() {
   const authConfigured = Boolean(process.env.NEXTAUTH_URL && process.env.NEXTAUTH_SECRET);
-  const vippsConfigured = Boolean(
-    process.env.VIPPS_CLIENT_ID && process.env.VIPPS_CLIENT_SECRET && process.env.VIPPS_WELL_KNOWN_URL,
-  );
+  const vippsConfigured = isVippsConfigured();
 
   try {
     const [userCount, subscriptionCount] = await Promise.all([

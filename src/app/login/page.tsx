@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { MagicLinkAuthScreen } from "@/components/auth/MagicLinkAuthScreen";
 import { authOptions } from "@/lib/auth";
+import { getSafeAuthConfigStatus } from "@/lib/auth-config-status";
 
 type LoginPageProps = {
   searchParams: Promise<{ callbackUrl?: string }>;
@@ -14,7 +15,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     redirect(getSafeCallbackUrl(params.callbackUrl));
   }
 
-  return <MagicLinkAuthScreen mode="login" />;
+  return <MagicLinkAuthScreen authConfig={getSafeAuthConfigStatus()} mode="login" />;
 }
 
 function getSafeCallbackUrl(callbackUrl?: string) {

@@ -9,6 +9,11 @@ type RequestState = "idle" | "loading" | "success" | "error";
 
 type MagicLinkAuthScreenProps = {
   mode: AuthMode;
+  authConfig: {
+    googleConfigured: boolean;
+    vippsConfigured: boolean;
+    emailConfigured: boolean;
+  };
 };
 
 const defaultForm = {
@@ -18,7 +23,7 @@ const defaultForm = {
   confirmPassword: "",
 };
 
-export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
+export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenProps) {
   const [form, setForm] = useState(defaultForm);
   const [requestState, setRequestState] = useState<RequestState>("idle");
   const [message, setMessage] = useState<string | null>(null);
@@ -30,7 +35,10 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
     const errorCode = new URLSearchParams(window.location.search).get("error");
     return errorCode ? getAuthErrorMessage(errorCode) : null;
   });
-  const [providers, setProviders] = useState({ google: false, vipps: false });
+  const [providers, setProviders] = useState({
+    google: authConfig.googleConfigured,
+    vipps: authConfig.vippsConfigured,
+  });
   const callbackUrl = getSafeCallbackUrl();
 
   useEffect(() => {
@@ -42,8 +50,8 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
         return;
       }
       setProviders({
-        google: Boolean(providerList?.google),
-        vipps: Boolean(providerList?.vipps),
+        google: authConfig.googleConfigured || Boolean(providerList?.google),
+        vipps: authConfig.vippsConfigured || Boolean(providerList?.vipps),
       });
     }
 
@@ -52,7 +60,7 @@ export function MagicLinkAuthScreen({ mode }: MagicLinkAuthScreenProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [authConfig.googleConfigured, authConfig.vippsConfigured]);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

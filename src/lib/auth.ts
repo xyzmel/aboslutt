@@ -5,10 +5,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
 import GoogleProvider from "next-auth/providers/google";
 import nodemailer from "nodemailer";
+import {
+  isEmailConfigured,
+  isVippsConfigured,
+  logAuthConfigStatusInDevelopment,
+} from "@/lib/auth-config-status";
 import { validateEmailMagicLinkRequest } from "@/lib/beta";
 import { verifyPassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
-import { isSmtpConfigured } from "@/lib/smtp";
 
 type VippsProfile = {
   sub: string;
@@ -18,12 +22,13 @@ type VippsProfile = {
   phone_number?: string | null;
 };
 
-const vippsClientId = process.env.VIPPS_CLIENT_ID;
-const vippsClientSecret = process.env.VIPPS_CLIENT_SECRET;
-const vippsWellKnownUrl = process.env.VIPPS_WELL_KNOWN_URL;
-export const isVippsConfigured = Boolean(vippsClientId && vippsClientSecret && vippsWellKnownUrl);
-const smtpConfigured = isSmtpConfigured();
+const vippsClientId = process.env.VIPPS_CLIENT_ID?.trim();
+const vippsClientSecret = process.env.VIPPS_CLIENT_SECRET?.trim();
+const vippsWellKnownUrl = process.env.VIPPS_WELL_KNOWN_URL?.trim();
+const smtpConfigured = isEmailConfigured();
 export const sessionStrategy = "jwt" as const;
+
+logAuthConfigStatusInDevelopment();
 
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
@@ -76,8 +81,8 @@ const providers: NextAuthOptions["providers"] = [
     },
   }),
   GoogleProvider({
-    clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+    clientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? "",
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET?.trim() ?? "",
     // Allowed for beta because Google emails are verified; review before full production.
     allowDangerousEmailAccountLinking: true,
     authorization: {
@@ -132,7 +137,7 @@ if (smtpConfigured) {
   );
 }
 
-if (isVippsConfigured) {
+if (isVippsConfigured()) {
   providers.push({
     id: "vipps",
     name: "Vipps",
