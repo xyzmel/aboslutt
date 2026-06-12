@@ -582,9 +582,12 @@ SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. 
 ## Kvalitetssjekk
 
 ```bash
+npm run check:text
 npm run lint
 npm run build
 ```
+
+Kildefiler skal lagres som UTF-8 uten BOM. Unngå å kopiere inn tekst som allerede er feil-dekodet/mojibake. Kjør `npm run check:text` før deploy hvis du har endret norsk UI-copy.
 
 ## Gmail-Importkvalitet
 
