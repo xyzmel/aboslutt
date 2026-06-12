@@ -1,17 +1,73 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import { MethodCard } from "@/components/landing/MethodCard";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
-const privacyPoints = [
-  "Gmail-skanningen bruker read-only tilgang.",
-  "Du ser forslagene før noe lagres.",
-  "Rå e-postinnhold lagres ikke.",
+const featureSections = [
+  {
+    title: "Manuell oversikt",
+    eyebrow: "Gratis å starte",
+    description:
+      "Legg inn abonnementene du allerede kjenner. Følg pris, kategori, intervall og neste trekk uten å koble til Gmail.",
+    points: ["Legg til eksisterende abonnementer selv", "Se månedlig og årlig kostnad", "Hold oversikten uten integrasjoner"],
+  },
+  {
+    title: "Automatisk skanning",
+    eyebrow: "Beta/SaaS",
+    description:
+      "Skann Gmail eller lim inn kvitteringer for å få forslag. Du bekrefter alltid kandidaten før noe lagres.",
+    points: ["Gmail read-only", "Forslag må godkjennes", "Rå e-postinnhold lagres ikke"],
+  },
+  {
+    title: "Varsler",
+    eyebrow: "Beta/SaaS",
+    description:
+      "Få e-post før kommende trekk og en enkel månedlig oppsummering når du ønsker mer hjelp til å følge med.",
+    points: ["Påminnelser før trekk", "Månedlig oppsummering", "Basert på abonnementer du har lagret"],
+  },
+  {
+    title: "Trygghet og personvern",
+    eyebrow: "Du bestemmer",
+    description:
+      "Aboslutt lagrer bare abonnementene du selv legger inn eller bekrefter. Du kan slette data fra innstillinger.",
+    points: ["Brukeren kontrollerer hva som lagres", "Ingen rå Gmail-tekst lagres", "Slett data når du vil"],
+  },
+  {
+    title: "Vipps Login",
+    eyebrow: "Norsk innlogging",
+    description: "Logg inn raskt med Vipps når du ønsker det. E-post/passord og Google fungerer fortsatt.",
+    points: ["Fortsett med Vipps", "Samme Aboslutt-konto", "Rask inngang til oversikten"],
+  },
+];
+
+const plans = [
+  {
+    name: "Gratis",
+    price: "0 kr",
+    description: "For deg som vil starte med manuell abonnementskontroll.",
+    features: ["Manuell abonnementssporing", "Opptil 10 abonnementer", "Månedlig/årlig oversikt", "Grunnleggende dashboard"],
+  },
+  {
+    name: "Beta",
+    price: "Gratis for utvalgte",
+    description: "For tidlige brukere som tester automatiske funksjoner.",
+    features: ["Alt i Gratis", "Gmail-skanning", "E-postpåminnelser", "Månedlig oppsummering"],
+    highlighted: true,
+  },
+  {
+    name: "Premium",
+    price: "Kommer senere",
+    description: "Betalt plan er ikke aktiv ennå.",
+    features: ["Ubegrensede abonnementer", "Automatisk skanning", "Varsler og innsikt", "Fremtidige bank/Open Banking-funksjoner"],
+  },
 ];
 
 type LandingScreenProps = {
+  authConfig: {
+    vippsConfigured: boolean;
+  };
   user: {
     name: string | null;
     email: string | null;
@@ -19,193 +75,221 @@ type LandingScreenProps = {
   } | null;
 };
 
-export function LandingScreen({ user }: LandingScreenProps) {
+export function LandingScreen({ authConfig, user }: LandingScreenProps) {
   const userLabel = user?.name ?? user?.email ?? "";
 
   return (
     <main className="min-h-screen bg-[#0D1B2A] text-white">
-      <section className="relative overflow-hidden px-5 py-10 sm:py-14">
-        <div className="absolute -right-44 -top-44 h-[34rem] w-[34rem] rounded-full bg-[#C8102E]/15 blur-2xl" />
-        <div className="relative z-10 mx-auto grid w-full max-w-5xl gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <div className="mb-12 flex items-center justify-between gap-4">
-              <Link className="inline-flex items-center gap-3" href="/">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C8102E] text-lg font-black text-white">
-                  A
-                </div>
-                <span className="text-2xl font-extrabold tracking-tight text-white">
-                  Abo<span className="text-[#C8102E]">slutt</span>
-                </span>
-              </Link>
-              {user ? (
-                <div className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
-                  <Link className="text-white/60 hover:text-white" href="/dashboard">
-                    Oversikt
-                  </Link>
-                  <Link className="text-white/60 hover:text-white" href="/import/email">
-                    Importer e-post
-                  </Link>
-                  <Link className="text-white/60 hover:text-white" href="/settings">
-                    Innstillinger
-                  </Link>
-                  {user.isAdmin ? (
-                    <Link className="text-white/60 hover:text-white" href="/admin">
-                      Admin
-                    </Link>
-                  ) : null}
-                  <button
-                    className="text-white/60 hover:text-white"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                    type="button"
-                  >
-                    Logg ut
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-3 text-sm font-semibold">
-                  <Link className="text-white/60 hover:text-white" href="/login">
-                    Logg inn
-                  </Link>
-                  <Link className="text-white/60 hover:text-white" href="/register">
-                    Opprett konto
-                  </Link>
-                </div>
-              )}
-            </div>
+      <section className="relative overflow-hidden px-5 py-8 sm:py-10">
+        <div className="relative z-10 mx-auto w-full max-w-6xl">
+          <PublicHeader user={user} />
 
-            <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
-              Abonnementsoversikt i beta
-            </p>
-            <h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">
-              Få kontroll på abonnementene dine
-            </h1>
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/65">
-              Aboslutt hjelper deg å finne faste trekk, prøveperioder og tjenester
-              du kanskje ikke bruker lenger. Betaen kan skanne Gmail med read-only
-              tilgang, foreslå abonnementer og la deg bekrefte hvert funn før det
-              lagres i oversikten.
-            </p>
-            {user ? (
-              <p className="mt-4 text-sm font-semibold text-white/70">
-                Du er logget inn som {userLabel}.
+          <div className="grid gap-10 py-14 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">
+                Abonnementsoversikt i beta
               </p>
-            ) : null}
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <h1 className="mt-4 max-w-2xl text-4xl font-extrabold leading-tight tracking-tight text-white sm:text-6xl">
+                Få kontroll på abonnementene dine
+              </h1>
+              <p className="mt-5 max-w-2xl text-base leading-7 text-white/68">
+                Aboslutt hjelper deg å holde oversikt manuelt først. Når du vil, kan du bruke automatisk skanning av
+                Gmail eller e-postkvitteringer for å finne abonnementer raskere.
+              </p>
               {user ? (
-                <>
-                  <Link
-                    className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]"
-                    href="/dashboard"
-                  >
-                    Gå til oversikt
-                  </Link>
-                  <Link
-                    className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]"
-                    href="/import/email"
-                  >
-                    Importer e-post
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link
-                    className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]"
-                    href="/register"
-                  >
-                    Start gratis beta
-                  </Link>
-                  <Link
-                    className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]"
-                    href="/login"
-                  >
-                    Logg inn
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
+                <p className="mt-4 text-sm font-semibold text-white/70">
+                  Du er logget inn som {userLabel}.
+                </p>
+              ) : null}
 
-          <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20">
-            <div className="mb-4 flex items-center justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-white">Beta</p>
-                <p className="text-xs text-white/50">For tidlige brukere</p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                {user ? (
+                  <>
+                    <PrimaryLink href="/dashboard">Gå til oversikt</PrimaryLink>
+                    <SecondaryLink href="/import/email">Importer e-post</SecondaryLink>
+                  </>
+                ) : (
+                  <>
+                    <PrimaryLink href="/register">Start gratis</PrimaryLink>
+                    <SecondaryLink href="/login">Logg inn</SecondaryLink>
+                  </>
+                )}
               </div>
-              <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-200">
-                Gratis
-              </span>
             </div>
 
-            <div className="flex flex-col gap-3">
-              <MethodCard
-                badge="Anbefalt"
-                description={
-                  user
-                    ? "Gå til oversikten og legg inn abonnementer manuelt."
-                    : "Opprett konto med e-post og passord."
-                }
-                href={user ? "/dashboard" : "/register"}
-                icon="@"
-                recommended
-                title="E-post"
-              />
-              <MethodCard
-                description="Koble til Google for Gmail read-only import."
-                href={user ? "/import/email" : "/login"}
-                icon="G"
-                title="Google"
-              />
-              <MethodCard
-                badge="Senere"
-                description="Vipps Login kommer snart."
-                href="/login"
-                icon="V"
-                title="Vipps Login"
-              />
+            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5 shadow-2xl shadow-black/20">
+              <div className="grid gap-3">
+                <HeroSignal title="Manuell tracking" text="Legg inn abonnementer selv, uten Gmail." />
+                <HeroSignal title="Valgfri skanning" text="Gmail-forslag må bekreftes før lagring." />
+                <HeroSignal title="Varsler" text="Få e-post før kommende trekk." />
+                <HeroSignal
+                  title="Vipps Login"
+                  text={
+                    authConfig.vippsConfigured
+                      ? "Logg inn raskt med Vipps når du ønsker det."
+                      : "Vipps aktiveres når innlogging er konfigurert."
+                  }
+                />
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="bg-[#F0F4F8] px-5 py-12 text-[#0D1B2A]">
-        <div className="mx-auto grid w-full max-w-5xl gap-5 md:grid-cols-3">
-          {privacyPoints.map((point) => (
-            <div key={point} className="rounded-2xl bg-white p-5 shadow-sm">
-              <p className="text-sm font-bold">{point}</p>
-            </div>
-          ))}
+      <section className="bg-[#F0F4F8] px-5 py-14 text-[#0D1B2A]" id="produkt">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="max-w-2xl">
+            <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Produkt</p>
+            <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Start manuelt. Automatiser når du vil.</h2>
+          </div>
+          <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {featureSections.map((feature) => (
+              <FeatureCard key={feature.title} {...feature} />
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="px-5 py-12">
-        <div className="mx-auto grid w-full max-w-5xl gap-5 md:grid-cols-2">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Priser</p>
-            <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Enkel beta-prising</h2>
-            <p className="mt-3 text-sm leading-6 text-white/60">
-              Aboslutt er gratis i beta mens tjenesten testes. Betalte planer
-              kommer senere når produktet er mer modent.
-            </p>
+      <section className="px-5 py-14" id="priser">
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Priser</p>
+              <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Planer for beta</h2>
+            </div>
+            <Link className="text-sm font-bold text-white/70 hover:text-white" href="/pricing">
+              Se alle planer
+            </Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-2xl border border-[#C8102E]/40 bg-[#C8102E]/15 p-5">
-              <p className="text-sm font-semibold text-white/70">Beta</p>
-              <p className="mt-3 text-3xl font-black">Gratis</p>
-              <p className="mt-2 text-sm text-white/60">For testing og tidlige brukere.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-5">
-              <p className="text-sm font-semibold text-white/70">Fremtidig plan</p>
-              <p className="mt-3 text-3xl font-black">Kommer senere</p>
-              <p className="mt-2 text-sm text-white/60">
-                Pris og funksjoner bestemmes etter beta.
-              </p>
-            </div>
+          <div className="mt-8 grid gap-5 lg:grid-cols-3">
+            {plans.map((plan) => (
+              <PlanCard key={plan.name} {...plan} />
+            ))}
           </div>
         </div>
       </section>
 
       <PublicFooter />
     </main>
+  );
+}
+
+function PublicHeader({ user }: { user: LandingScreenProps["user"] }) {
+  return (
+    <header className="flex items-center justify-between gap-4">
+      <Link className="inline-flex items-center gap-3" href="/">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#C8102E] text-lg font-black text-white">
+          A
+        </div>
+        <span className="text-2xl font-extrabold tracking-tight text-white">
+          Abo<span className="text-[#C8102E]">slutt</span>
+        </span>
+      </Link>
+      {user ? (
+        <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
+          <HeaderLink href="/dashboard">Oversikt</HeaderLink>
+          <HeaderLink href="/import/email">Importer e-post</HeaderLink>
+          <HeaderLink href="/settings">Innstillinger</HeaderLink>
+          {user.isAdmin ? <HeaderLink href="/admin">Admin</HeaderLink> : null}
+          <button className="text-white/60 hover:text-white" onClick={() => signOut({ callbackUrl: "/login" })} type="button">
+            Logg ut
+          </button>
+        </nav>
+      ) : (
+        <nav className="flex flex-wrap items-center justify-end gap-3 text-sm font-semibold">
+          <HeaderLink href="#produkt">Produkt</HeaderLink>
+          <HeaderLink href="/pricing">Priser</HeaderLink>
+          <HeaderLink href="/login">Logg inn</HeaderLink>
+          <Link className="rounded-xl bg-[#C8102E] px-4 py-2 text-white hover:bg-[#a90d27]" href="/register">
+            Opprett konto
+          </Link>
+        </nav>
+      )}
+    </header>
+  );
+}
+
+function HeaderLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link className="text-white/60 hover:text-white" href={href}>
+      {children}
+    </Link>
+  );
+}
+
+function PrimaryLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link className="rounded-xl bg-[#C8102E] px-5 py-3.5 text-center text-sm font-bold text-white transition hover:bg-[#a90d27]" href={href}>
+      {children}
+    </Link>
+  );
+}
+
+function SecondaryLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link className="rounded-xl border border-white/15 px-5 py-3.5 text-center text-sm font-bold text-white transition hover:border-white/30 hover:bg-white/[0.06]" href={href}>
+      {children}
+    </Link>
+  );
+}
+
+function HeroSignal({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="rounded-xl bg-white p-4 text-[#0D1B2A]">
+      <p className="text-sm font-extrabold">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-[#5F6F82]">{text}</p>
+    </div>
+  );
+}
+
+function FeatureCard({
+  title,
+  eyebrow,
+  description,
+  points,
+}: {
+  title: string;
+  eyebrow: string;
+  description: string;
+  points: string[];
+}) {
+  return (
+    <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+      <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">{eyebrow}</p>
+      <h3 className="mt-2 text-xl font-extrabold tracking-tight">{title}</h3>
+      <p className="mt-3 text-sm leading-6 text-[#5F6F82]">{description}</p>
+      <ul className="mt-4 grid gap-2 text-sm font-semibold text-[#0D1B2A]">
+        {points.map((point) => (
+          <li key={point}>✓ {point}</li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+function PlanCard({
+  name,
+  price,
+  description,
+  features,
+  highlighted,
+}: {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  highlighted?: boolean;
+}) {
+  return (
+    <article className={`rounded-2xl p-5 ring-1 ${highlighted ? "bg-[#C8102E] text-white ring-[#C8102E]" : "bg-white/[0.06] text-white ring-white/10"}`}>
+      <p className="text-sm font-semibold text-white/70">{name}</p>
+      <p className="mt-3 text-3xl font-black">{price}</p>
+      <p className="mt-2 min-h-12 text-sm leading-6 text-white/70">{description}</p>
+      <ul className="mt-5 grid gap-2 text-sm font-semibold">
+        {features.map((feature) => (
+          <li key={feature}>✓ {feature}</li>
+        ))}
+      </ul>
+    </article>
   );
 }

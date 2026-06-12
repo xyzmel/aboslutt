@@ -6,7 +6,7 @@ Aboslutt er en Next.js + TypeScript + Tailwind MVP for en norsk abonnementstjene
 
 Aboslutt er først og fremst en manuell abonnementoversikt: alle brukere kan legge inn eksisterende abonnementer selv uten å koble til Gmail. Automatisk Gmail-/e-postskanning er en valgfri SaaS-funksjon som kan foreslå kandidater basert på kvitteringer. Brukeren må alltid bekrefte kandidatene før de lagres, og rå e-postinnhold lagres ikke.
 
-Vipps Login er planlagt, men skal vises som `Vipps Login kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+Vipps Login er aktivt når Vipps-miljøvariablene er konfigurert. Hvis de mangler, vises Vipps-knappen som deaktivert.
 
 ## Kom I Gang
 
@@ -59,8 +59,9 @@ Viktig: Etter bytte til `provider = "postgresql"` i `prisma/schema.prisma` skal 
 ## Sider
 
 - `/` landingsside med valg av metode
-- `/login` e-post magic-link, Google/Gmail via importflyt og Vipps Login når konfigurert
-- `/register` opprett konto med e-post magic-link
+- `/login` e-post/passord, Google og Vipps Login når konfigurert
+- `/register` opprett konto med e-post/passord, Google eller Vipps
+- `/pricing` plan- og prisoversikt
 - `/dashboard` databasebasert abonnementoversikt med legg til, rediger, slett og vedvarende avslutning
 - `/subscriptions/[id]` detaljside for et abonnement med redigering, avslutning og sletting
 - `/import/email` lokal import fra Gmail-skanning eller innlimt kvitteringstekst
@@ -82,17 +83,25 @@ Auth-konfigurasjonen ligger i `src/lib/auth.ts`, og route handleren ligger i `sr
 
 Aktive providers:
 
-- Email magic-link via SMTP
-- Google OAuth med Gmail read-only for lokale/private MVP-tester
+- E-post/passord med verifisering
+- Google OAuth med Gmail read-only
 - Vipps Login via OIDC/OAuth når Vipps-miljøvariablene er satt
 
 Vipps-provideren registreres bare når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET` og `VIPPS_WELL_KNOWN_URL` finnes. Hvis de mangler, krasjer ikke appen, og Vipps-knappen på `/login` vises som deaktivert.
+
+## Planer Og Prising
+
+Manuell abonnementssporing er gratis å starte med. Automatisk skanning, varsler og oppsummeringer er beta-/SaaS-funksjoner, og premium-betaling er ikke aktivert ennå.
+
+- `Gratis`: manuell abonnementssporing, opptil 10 abonnementer, månedlig/årlig oversikt og grunnleggende dashboard.
+- `Beta`: alt i Gratis, Gmail-skanning, e-postpåminnelser og månedlig oppsummering. Gratis for utvalgte tidlige brukere.
+- `Premium`: kommer senere med ubegrensede abonnementer, automatisering, innsikt og fremtidige bank/Open Banking-funksjoner.
 
 ## Beta Registration
 
 `/register` bruker nå e-post og passord for beta-registrering. Passord lagres kun som bcrypt-hash i `User.passwordHash`. Brukeren må bekrefte e-postadressen via `/verify-email?token=...` før innlogging med passord fungerer.
 
-Google-login fungerer fortsatt, og Vipps vises som `Vipps Login kommer snart` med mindre Vipps-miljøvariablene er konfigurert.
+Google-login fungerer fortsatt, og Vipps Login fungerer når Vipps-miljøvariablene er konfigurert.
 
 Tidligere magic-link e-postprovider ligger fortsatt i auth-oppsettet når SMTP er konfigurert, men beta-flyten prioriterer e-post/passord med verifisering.
 
@@ -158,6 +167,8 @@ Produksjon: https://api.vipps.no/access-management-1.0/access/.well-known/openid
 ```
 
 Ikke commit Vipps-nøkler. Bruk `.env.local` lokalt og sikre secret-håndtering i hostingmiljøet.
+
+Vipps-knappen bruker en lokal SVG under `public/vipps-logo.svg`. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
 
 ### Vipps Troubleshooting
 

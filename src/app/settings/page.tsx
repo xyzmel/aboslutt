@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SettingsClient } from "@/components/settings/SettingsClient";
 import { isAdminUser } from "@/lib/admin";
+import { isVippsConfigured } from "@/lib/auth-config-status";
 import { getCurrentAppUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -98,6 +99,7 @@ export default async function SettingsPage() {
         name={currentUser.name}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}
         vippsConnected={Boolean(vippsAccount)}
+        vippsConfigured={isVippsConfigured()}
       />
     </main>
   );

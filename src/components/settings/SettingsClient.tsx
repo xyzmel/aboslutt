@@ -10,6 +10,7 @@ type SettingsClientProps = {
   gmailScopeConnected: boolean;
   googleReconnectRequired: boolean;
   vippsConnected: boolean;
+  vippsConfigured: boolean;
   isAdmin: boolean;
   emailRemindersEnabled: boolean;
   reminderDaysBefore: number;
@@ -23,6 +24,7 @@ export function SettingsClient({
   gmailScopeConnected,
   googleReconnectRequired,
   vippsConnected,
+  vippsConfigured,
   isAdmin,
   emailRemindersEnabled,
   reminderDaysBefore,
@@ -174,7 +176,7 @@ export function SettingsClient({
                   : "Ikke koblet til"}
             </p>
             <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
-            <p>Vipps Login: {vippsConnected ? "Tilkoblet" : "Ikke koblet til"}</p>
+            <p>Vipps: {vippsConnected ? "Vipps er tilkoblet" : "Ikke koblet til"}</p>
           </div>
           {!googleConnected || googleReconnectRequired ? (
             <button
@@ -189,6 +191,19 @@ export function SettingsClient({
               Google/Gmail er tilkoblet.
             </div>
           )}
+          {vippsConnected ? (
+            <div className="mt-3 rounded-xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700">
+              Vipps er tilkoblet.
+            </div>
+          ) : vippsConfigured ? (
+            <button
+              className="mt-3 rounded-xl bg-[#FF5B24] px-5 py-3 text-sm font-bold text-white hover:bg-[#e94f1f]"
+              onClick={() => signIn("vipps", { callbackUrl: "/settings" })}
+              type="button"
+            >
+              Koble til Vipps
+            </button>
+          ) : null}
           <p className="mt-4 text-sm leading-6 text-[#5F6F82]">
             Full tilbakekalling hos Google er ikke implementert ennå. Du kan fjerne
             tilgangen i Google-kontoen din under tredjepartstilganger.

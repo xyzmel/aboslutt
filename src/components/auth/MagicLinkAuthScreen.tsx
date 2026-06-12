@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { getProviders, signIn } from "next-auth/react";
 
@@ -40,6 +41,8 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
     vipps: authConfig.vippsConfigured,
   });
   const callbackUrl = getSafeCallbackUrl();
+  const isRegister = mode === "register";
+  const title = isRegister ? "Opprett konto" : "Logg inn";
 
   useEffect(() => {
     let isMounted = true;
@@ -69,7 +72,7 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
     setAuthErrorMessage(null);
 
     try {
-      if (mode === "register") {
+      if (isRegister) {
         await registerUser();
         return;
       }
@@ -117,10 +120,6 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  const isRegister = mode === "register";
-  const title = isRegister ? "Opprett konto" : "Logg inn";
-  const submitText = isRegister ? "Opprett konto" : "Logg inn";
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#0D1B2A] px-5 py-10">
       <section className="w-full max-w-md">
@@ -129,8 +128,8 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
         </Link>
 
         <div className="rounded-[1.25rem] bg-white p-7 shadow-2xl shadow-black/20 sm:p-9">
-          <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5E6E9] text-lg font-extrabold text-[#C8102E]">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C8102E] text-lg font-extrabold text-white">
               A
             </div>
             <div>
@@ -138,10 +137,11 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
               <h1 className="text-2xl font-bold tracking-tight text-[#0D1B2A]">{title}</h1>
             </div>
           </div>
+
           <p className="text-sm leading-6 text-[#5F6F82]">
             {isRegister
-              ? "Opprett konto med e-post og passord. Du må bekrefte e-posten før innlogging."
-              : "Logg inn med e-post og passord, eller fortsett med Google."}
+              ? "Opprett konto med e-post og passord, eller fortsett med Google eller Vipps."
+              : "Logg inn med e-post og passord, Google eller Vipps."}
           </p>
 
           {authErrorMessage ? (
@@ -194,14 +194,14 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
               />
             ) : null}
             <button
-              className="rounded-xl bg-[#0D1B2A] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
+              className="h-12 rounded-xl bg-[#0D1B2A] px-5 text-sm font-bold text-white transition hover:bg-[#15283c] disabled:opacity-55"
               disabled={requestState === "loading"}
               type="submit"
             >
               {requestState === "loading"
                 ? "Jobber..."
                 : isRegister
-                  ? submitText
+                  ? "Opprett konto"
                   : "Fortsett med e-post"}
             </button>
             {!isRegister ? (
@@ -234,7 +234,7 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
 
           <div className="grid gap-3">
             <button
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#DBE4EE] bg-white px-5 py-3.5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#DBE4EE] bg-white px-5 text-sm font-bold text-[#0D1B2A] transition hover:border-[#C8102E]/50 disabled:opacity-55"
               disabled={!providers.google}
               onClick={() => signIn("google", { callbackUrl })}
               type="button"
@@ -243,12 +243,12 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
               Fortsett med Google
             </button>
             <button
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#F3C3CC] bg-[#C8102E] px-5 py-3.5 text-sm font-bold text-white transition hover:bg-[#a90d27] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
+              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#FF5B24] bg-[#FF5B24] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#e94f1f] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
               disabled={!providers.vipps}
               onClick={() => signIn("vipps", { callbackUrl })}
               type="button"
             >
-              <span className="rounded-full bg-white/15 px-2 py-0.5 text-xs font-black">Vipps</span>
+              <Image alt="" height={24} src="/vipps-logo.svg" width={73} />
               {providers.vipps ? "Fortsett med Vipps" : "Vipps Login kommer snart"}
             </button>
           </div>
@@ -287,28 +287,11 @@ function getAuthErrorMessage(errorCode: string) {
       "Denne e-posten er allerede brukt med en annen innloggingsmetode. Logg inn med e-post/passord først, og koble Google fra innstillinger.",
     EMAIL_NOT_VERIFIED: "E-posten din er ikke bekreftet ennå. Sjekk e-posten din før du logger inn.",
     AccessDenied: "Innloggingen ble avvist. Prøv igjen eller bruk en annen innloggingsmetode.",
-    Callback: "Google-innloggingen kunne ikke fullføres. Prøv igjen, eller logg inn med e-post/passord.",
+    Callback: "Innloggingen kunne ikke fullføres. Prøv igjen, eller logg inn med e-post/passord.",
     Configuration: "Innlogging er ikke riktig konfigurert akkurat nå. Prøv igjen senere.",
   };
 
   return messages[errorCode] ?? "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.";
-  if (errorCode === "OAuthAccountNotLinked") {
-    return "Denne e-posten er allerede brukt med en annen innloggingsmetode. Logg inn med e-post/passord først, og koble Google fra innstillinger.";
-  }
-
-  if (errorCode === "EMAIL_NOT_VERIFIED") {
-    return "E-posten din er ikke bekreftet ennå. Sjekk e-posten din før du logger inn.";
-  }
-
-  if (errorCode === "OAuthAccountNotLinked") {
-    return "Denne e-posten er allerede brukt med en annen innloggingsmetode. Prøv Google eller e-post/passord.";
-  }
-
-  if (errorCode === "AccessDenied") {
-    return "Innloggingen ble avvist. Prøv igjen eller bruk en annen innloggingsmetode.";
-  }
-
-  return "Kunne ikke logge inn. Sjekk e-post, passord og at kontoen er verifisert.";
 }
 
 function getSafeCallbackUrl() {
@@ -336,10 +319,7 @@ function GoogleIcon() {
         d="M12 22c2.7 0 5-0.9 6.6-2.5l-3.2-2.5c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z"
         fill="#34A853"
       />
-      <path
-        d="M6.4 13.8a6 6 0 0 1 0-3.6V7.6H3.1a10 10 0 0 0 0 8.8l3.3-2.6Z"
-        fill="#FBBC05"
-      />
+      <path d="M6.4 13.8a6 6 0 0 1 0-3.6V7.6H3.1a10 10 0 0 0 0 8.8l3.3-2.6Z" fill="#FBBC05" />
       <path
         d="M12 6.1c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 12 2a10 10 0 0 0-8.9 5.6l3.3 2.6C7.2 7.9 9.4 6.1 12 6.1Z"
         fill="#EA4335"
@@ -367,7 +347,7 @@ function TextInput({
     <label className="text-sm font-semibold text-[#4A5568]">
       {label}
       <input
-        className="mt-2 w-full rounded-xl border border-[#DBE4EE] px-4 py-3 text-sm text-[#0D1B2A] outline-none transition focus:border-[#0D1B2A]"
+        className="mt-2 h-12 w-full rounded-xl border border-[#DBE4EE] px-4 text-sm text-[#0D1B2A] outline-none transition focus:border-[#0D1B2A]"
         minLength={minLength}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
