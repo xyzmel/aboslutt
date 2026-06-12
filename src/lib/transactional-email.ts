@@ -6,9 +6,10 @@ type SendEmailInput = {
   subject: string;
   text: string;
   html: string;
+  replyTo?: string;
 };
 
-export async function sendTransactionalEmail({ to, subject, text, html }: SendEmailInput) {
+export async function sendTransactionalEmail({ to, subject, text, html, replyTo }: SendEmailInput) {
   if (!isSmtpConfigured()) {
     return { sent: false };
   }
@@ -26,6 +27,7 @@ export async function sendTransactionalEmail({ to, subject, text, html }: SendEm
   await transport.sendMail({
     to,
     from: process.env.EMAIL_FROM,
+    replyTo,
     subject,
     text,
     html,

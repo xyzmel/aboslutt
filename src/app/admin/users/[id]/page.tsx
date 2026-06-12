@@ -55,6 +55,22 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
             category: true,
           },
         },
+        cancellationRequests: {
+          orderBy: { updatedAt: "desc" },
+          take: 10,
+          select: {
+            id: true,
+            status: true,
+            method: true,
+            recipientEmail: true,
+            customerEmail: true,
+            sentAt: true,
+            confirmedAt: true,
+            rejectedAt: true,
+            createdAt: true,
+            subscription: { select: { name: true } },
+          },
+        },
       },
     });
 
@@ -109,6 +125,24 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
               </section>
 
               <AdminUserActions email={user.email} plan={user.plan} userId={user.id} />
+              <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+                <h2 className="text-lg font-extrabold tracking-tight">Oppsigelser</h2>
+                <div className="mt-4 grid gap-3 text-sm">
+                  {user.cancellationRequests.length > 0 ? (
+                    user.cancellationRequests.map((request) => (
+                      <div className="rounded-xl bg-[#F7F9FC] p-3" key={request.id}>
+                        <p className="font-bold">{request.subscription.name}</p>
+                        <p className="mt-1 text-[#5F6F82]">
+                          {request.status} · {request.method} · {request.recipientEmail}
+                        </p>
+                        <p className="mt-1 text-xs text-[#5F6F82]">{formatDate(request.createdAt)}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[#5F6F82]">Ingen oppsigelsesrequests.</p>
+                  )}
+                </div>
+              </section>
             </div>
 
             <section className="overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-[#DBE4EE]">

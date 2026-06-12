@@ -43,6 +43,10 @@ export default async function AdminPage() {
       ignoredImportCandidatesCount,
       wrongImportReportsCount,
       lowConfidenceConfirmedCount,
+      totalCancellationRequests,
+      awaitingCancellationRequests,
+      confirmedCancellationRequests,
+      manualCancellationRequests,
       importIssueTypeCounts,
       latestImportFeedback,
       latestBetaRequests,
@@ -73,6 +77,10 @@ export default async function AdminPage() {
           confidence: { lt: 0.5 },
         },
       }),
+      prisma.cancellationRequest.count(),
+      prisma.cancellationRequest.count({ where: { status: "awaiting_confirmation" } }),
+      prisma.cancellationRequest.count({ where: { status: "confirmed_cancelled" } }),
+      prisma.cancellationRequest.count({ where: { status: "manual_required" } }),
       prisma.importFeedback.groupBy({
         by: ["issueType"],
         _count: { issueType: true },
@@ -153,6 +161,10 @@ export default async function AdminPage() {
       ["Import-funn ignorert", ignoredImportCandidatesCount],
       ["Feilrapporterte funn", wrongImportReportsCount],
       ["Lav tillit lagret", lowConfidenceConfirmedCount],
+      ["Oppsigelser startet", totalCancellationRequests],
+      ["Venter bekreftelse", awaitingCancellationRequests],
+      ["Bekreftet avsluttet", confirmedCancellationRequests],
+      ["Krever manuell handling", manualCancellationRequests],
       ["Månedsoppsummering aktivert", monthlySummaryEnabledCount],
     ];
 

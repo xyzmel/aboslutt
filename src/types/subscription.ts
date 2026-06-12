@@ -16,5 +16,6 @@ export type Subscription = {
   note?: string | null;
   source?: string | null;
   confidence?: number | null;
+  cancellationStatus?: string | null;
   createdAt?: string;
 };

@@ -29,6 +29,11 @@ const subscriptionSelect = {
   source: true,
   confidence: true,
   createdAt: true,
+  cancellationRequests: {
+    orderBy: { updatedAt: "desc" },
+    take: 1,
+    select: { status: true },
+  },
 } as const;
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -48,7 +53,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json({ error: "Fant ikke abonnementet." }, { status: 404 });
   }
 
-  return NextResponse.json(await rolloverSubscription(subscription));
+  return NextResponse.json(withCancellationStatus(await rolloverSubscription(subscription)));
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -143,7 +148,15 @@ export async function PATCH(request: Request, context: RouteContext) {
     select: subscriptionSelect,
   });
 
-  return NextResponse.json(await rolloverSubscription(subscription));
+  return NextResponse.json(withCancellationStatus(await rolloverSubscription(subscription)));
+}
+
+function withCancellationStatus<T extends { cancellationRequests?: { status: string }[] }>(subscription: T) {
+  const { cancellationRequests, ...rest } = subscription;
+  return {
+    ...rest,
+    cancellationStatus: cancellationRequests?.[0]?.status ?? null,
+  };
 }
 
 export async function DELETE(_request: Request, context: RouteContext) {

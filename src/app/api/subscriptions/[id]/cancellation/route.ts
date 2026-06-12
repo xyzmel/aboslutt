@@ -1,0 +1,303 @@
+import { NextResponse } from "next/server";
+import {
+  createCancellationDraft,
+  isCancellationStatus,
+  logCancellationAudit,
+} from "@/lib/cancellation";
+import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { canSendCancellationEmail } from "@/lib/plans";
+import { prisma } from "@/lib/prisma";
+import { sendTransactionalEmail } from "@/lib/transactional-email";
+
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+const requestSelect = {
+  id: true,
+  status: true,
+  method: true,
+  recipientEmail: true,
+  customerName: true,
+  customerEmail: true,
+  customerNumber: true,
+  subject: true,
+  body: true,
+  consentConfirmed: true,
+  sentAt: true,
+  confirmedAt: true,
+  rejectedAt: true,
+  providerResponse: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
+export async function GET(_request: Request, context: RouteContext) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return unauthorizedResponse();
+  }
+
+  const { id } = await context.params;
+  const subscription = await getOwnedSubscription(id, currentUser.id);
+  if (!subscription) {
+    return NextResponse.json({ ok: false, error: "NOT_FOUND", message: "Fant ikke abonnementet." }, { status: 404 });
+  }
+
+  const cancellationRequest = await prisma.cancellationRequest.findFirst({
+    where: { userId: currentUser.id, subscriptionId: id },
+    orderBy: { updatedAt: "desc" },
+    select: requestSelect,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    canSend: canSendCancellationEmail(currentUser),
+    request: cancellationRequest,
+  });
+}
+
+export async function POST(request: Request, context: RouteContext) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return unauthorizedResponse();
+  }
+
+  const { id } = await context.params;
+  const subscription = await getOwnedSubscription(id, currentUser.id);
+  if (!subscription) {
+    return NextResponse.json({ ok: false, error: "NOT_FOUND", message: "Fant ikke abonnementet." }, { status: 404 });
+  }
+
+  const payload = await request.json().catch(() => ({}));
+  const customerName = getString(payload.customerName) || currentUser.name || "";
+  const customerEmail = getString(payload.customerEmail) || currentUser.email || "";
+  const customerNumber = getString(payload.customerNumber);
+  const recipientEmail = getString(payload.recipientEmail);
+  const draft = createCancellationDraft({
+    subscriptionName: subscription.name,
+    customerName,
+    customerEmail,
+    customerNumber,
+  });
+  const subject = getString(payload.subject) || draft.subject;
+  const body = getString(payload.body) || draft.body;
+
+  const validationError = validateDraft({ customerName, customerEmail, recipientEmail, subject, body });
+  if (validationError) {
+    return validationError;
+  }
+
+  const cancellationRequest = await prisma.cancellationRequest.create({
+    data: {
+      userId: currentUser.id,
+      subscriptionId: subscription.id,
+      status: "ready",
+      method: "email",
+      recipientEmail,
+      customerName,
+      customerEmail,
+      customerNumber: customerNumber || null,
+      subject,
+      body,
+      consentConfirmed: false,
+    },
+    select: requestSelect,
+  });
+
+  await logCancellationAudit({
+    userId: currentUser.id,
+    subscriptionId: subscription.id,
+    cancellationRequestId: cancellationRequest.id,
+    action: "cancellation_draft_created",
+  });
+
+  return NextResponse.json({ ok: true, request: cancellationRequest }, { status: 201 });
+}
+
+export async function PATCH(request: Request, context: RouteContext) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser) {
+    return unauthorizedResponse();
+  }
+
+  const { id } = await context.params;
+  const subscription = await getOwnedSubscription(id, currentUser.id);
+  if (!subscription) {
+    return NextResponse.json({ ok: false, error: "NOT_FOUND", message: "Fant ikke abonnementet." }, { status: 404 });
+  }
+
+  const payload = await request.json().catch(() => ({}));
+  const action = getString(payload.action);
+  const requestId = getString(payload.requestId);
+
+  if (!requestId) {
+    return NextResponse.json({ ok: false, error: "MISSING_REQUEST", message: "Mangler oppsigelsesutkast." }, { status: 400 });
+  }
+
+  const cancellationRequest = await prisma.cancellationRequest.findFirst({
+    where: { id: requestId, userId: currentUser.id, subscriptionId: subscription.id },
+  });
+
+  if (!cancellationRequest) {
+    return NextResponse.json({ ok: false, error: "NOT_FOUND", message: "Fant ikke oppsigelsesutkastet." }, { status: 404 });
+  }
+
+  if (action === "send") {
+    return sendCancellationEmail({ currentUser, cancellationRequest });
+  }
+
+  if (action === "status") {
+    const status = getString(payload.status);
+    if (!isCancellationStatus(status) || !["confirmed_cancelled", "rejected", "manual_required"].includes(status)) {
+      return NextResponse.json({ ok: false, error: "INVALID_STATUS", message: "Ugyldig status." }, { status: 400 });
+    }
+
+    const now = new Date();
+    const updated = await prisma.$transaction(async (tx) => {
+      const requestUpdate = await tx.cancellationRequest.update({
+        where: { id: cancellationRequest.id },
+        data: {
+          status,
+          confirmedAt: status === "confirmed_cancelled" ? now : null,
+          rejectedAt: status === "rejected" ? now : null,
+        },
+        select: requestSelect,
+      });
+
+      if (status === "confirmed_cancelled") {
+        await tx.subscription.update({
+          where: { id: subscription.id },
+          data: { status: "cancelled" },
+        });
+      }
+
+      return requestUpdate;
+    });
+
+    await logCancellationAudit({
+      userId: currentUser.id,
+      subscriptionId: subscription.id,
+      cancellationRequestId: cancellationRequest.id,
+      action: `cancellation_${status}`,
+    });
+
+    return NextResponse.json({ ok: true, request: updated });
+  }
+
+  return NextResponse.json({ ok: false, error: "INVALID_ACTION", message: "Ugyldig handling." }, { status: 400 });
+}
+
+async function sendCancellationEmail({
+  currentUser,
+  cancellationRequest,
+}: {
+  currentUser: { id: string; plan: string | null };
+  cancellationRequest: {
+    id: string;
+    userId: string;
+    subscriptionId: string;
+    recipientEmail: string;
+    customerEmail: string;
+    subject: string;
+    body: string;
+  };
+}) {
+  if (!canSendCancellationEmail(currentUser)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "PLAN_REQUIRED",
+        message: "Gratis-brukere kan kopiere utkastet, men sending via Aboslutt krever beta eller premium.",
+      },
+      { status: 403 },
+    );
+  }
+
+  const emailResult = await sendTransactionalEmail({
+    to: cancellationRequest.recipientEmail,
+    replyTo: cancellationRequest.customerEmail,
+    subject: cancellationRequest.subject,
+    text: cancellationRequest.body,
+    html: `<pre style="font-family: Arial, sans-serif; white-space: pre-wrap;">${escapeHtml(cancellationRequest.body)}</pre>`,
+  });
+
+  if (!emailResult.sent) {
+    return NextResponse.json(
+      { ok: false, error: "EMAIL_NOT_CONFIGURED", message: "E-postsending er ikke konfigurert." },
+      { status: 503 },
+    );
+  }
+
+  const updated = await prisma.cancellationRequest.update({
+    where: { id: cancellationRequest.id },
+    data: {
+      status: "awaiting_confirmation",
+      sentAt: new Date(),
+      consentConfirmed: true,
+      providerResponse: "sent",
+    },
+    select: requestSelect,
+  });
+
+  await logCancellationAudit({
+    userId: cancellationRequest.userId,
+    subscriptionId: cancellationRequest.subscriptionId,
+    cancellationRequestId: cancellationRequest.id,
+    action: "cancellation_email_sent",
+  });
+
+  return NextResponse.json({ ok: true, request: updated });
+}
+
+function getOwnedSubscription(id: string, userId: string) {
+  return prisma.subscription.findFirst({
+    where: { id, userId },
+    select: { id: true, name: true },
+  });
+}
+
+function validateDraft(input: {
+  customerName: string;
+  customerEmail: string;
+  recipientEmail: string;
+  subject: string;
+  body: string;
+}) {
+  if (!input.customerName || !input.customerEmail || !input.recipientEmail || !input.subject || !input.body) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_DRAFT", message: "Fyll inn navn, e-post, mottaker, emne og melding." },
+      { status: 400 },
+    );
+  }
+
+  if (!isEmail(input.customerEmail) || !isEmail(input.recipientEmail)) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_EMAIL", message: "Kontroller e-postadressene." },
+      { status: 400 },
+    );
+  }
+
+  return null;
+}
+
+function getString(value: unknown) {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function isEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (char) => {
+    const entities: Record<string, string> = {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;",
+    };
+    return entities[char];
+  });
+}

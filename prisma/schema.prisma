@@ -30,6 +30,8 @@ model User {
   feedback      Feedback[]
   ignoredImportCandidates IgnoredImportCandidate[]
   importFeedback ImportFeedback[]
+  cancellationRequests CancellationRequest[]
+  cancellationAuditLogs CancellationAuditLog[]
   reminderLogs  ReminderLog[]
   sessions      Session[]
   subscriptions Subscription[]
@@ -217,12 +219,58 @@ model Subscription {
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   reminderLogs ReminderLog[]
+  cancellationRequests CancellationRequest[]
 
   @@index([userId])
   @@index([normalizedName])
   @@index([category])
   @@index([status])
   @@index([billingInterval])
+}
+
+model CancellationRequest {
+  id               String   @id @default(cuid())
+  userId           String
+  subscriptionId   String
+  status           String   @default("draft")
+  method           String   @default("email")
+  recipientEmail   String
+  customerName     String
+  customerEmail    String
+  customerNumber   String?
+  subject          String
+  body             String
+  consentConfirmed Boolean  @default(false)
+  sentAt           DateTime?
+  confirmedAt      DateTime?
+  rejectedAt       DateTime?
+  providerResponse String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CancellationAuditLog {
+  id                    String   @id @default(cuid())
+  userId                String
+  subscriptionId        String?
+  cancellationRequestId String?
+  action                String
+  metadataJson          String?
+  createdAt             DateTime @default(now())
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@index([cancellationRequestId])
+  @@index([action])
+  @@index([createdAt])
 }
 
 model ReminderLog {

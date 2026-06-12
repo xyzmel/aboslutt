@@ -2,6 +2,7 @@ declare module "nodemailer" {
   type MailOptions = {
     to: string;
     from?: string;
+    replyTo?: string;
     subject: string;
     text: string;
     html: string;

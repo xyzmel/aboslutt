@@ -36,6 +36,10 @@ export function canUseMonthlySummary(user: PlanLikeUser) {
   return hasBetaEntitlements(getUserPlan(user));
 }
 
+export function canSendCancellationEmail(user: PlanLikeUser) {
+  return hasBetaEntitlements(getUserPlan(user));
+}
+
 export function canAddManualSubscription(user: PlanLikeUser, currentSubscriptionCount: number) {
   if (hasBetaEntitlements(getUserPlan(user))) {
     return true;

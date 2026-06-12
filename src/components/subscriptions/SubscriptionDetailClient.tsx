@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
@@ -154,6 +155,12 @@ export function SubscriptionDetailClient({
               >
                 {isEditing ? "Lukk redigering" : "Rediger"}
               </button>
+              <Link
+                className="rounded-xl border border-[#DBE4EE] px-4 py-2.5 text-center text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+                href={`/subscriptions/${subscription.id}/cancel`}
+              >
+                Lag oppsigelse
+              </Link>
               <button
                 className="rounded-xl border border-[#F3C3CC] px-4 py-2.5 text-sm font-bold text-[#C8102E] hover:bg-[#F5E6E9]"
                 onClick={markAsCancelled}

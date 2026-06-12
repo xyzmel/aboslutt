@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getCancellationStatusLabel } from "@/lib/cancellation";
 import { formatNextPaymentDate } from "@/lib/subscription-date";
 import type { Subscription } from "@/types/subscription";
 
@@ -39,6 +40,7 @@ export function SubscriptionCard({
 }: SubscriptionCardProps) {
   const isCancelled = subscription.status === "cancelled";
   const sourceBadge = getSourceBadge(subscription.source);
+  const cancellationLabel = getCancellationStatusLabel(subscription.cancellationStatus);
 
   return (
     <article
@@ -60,6 +62,11 @@ export function SubscriptionCard({
             <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${sourceBadge.className}`}>
               {sourceBadge.label}
             </span>
+            {cancellationLabel ? (
+              <span className="rounded-full bg-[#FFF6E8] px-2.5 py-1 text-xs font-bold text-[#8A4B13]">
+                {cancellationLabel}
+              </span>
+            ) : null}
           </div>
         </div>
         <span
@@ -94,7 +101,7 @@ export function SubscriptionCard({
         </p>
       ) : null}
 
-      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <button
           className={`rounded-xl px-4 py-2.5 text-sm font-bold transition ${
             isSelected
@@ -119,6 +126,12 @@ export function SubscriptionCard({
           href={`/subscriptions/${subscription.id}`}
         >
           Detaljer
+        </Link>
+        <Link
+          className="rounded-xl border border-[#DBE4EE] px-4 py-2.5 text-center text-sm font-bold text-[#0D1B2A] hover:border-[#C8102E]/50"
+          href={`/subscriptions/${subscription.id}/cancel`}
+        >
+          Si opp
         </Link>
         <button
           className="rounded-xl border border-[#F3C3CC] px-4 py-2.5 text-sm font-bold text-[#C8102E] hover:bg-[#F5E6E9]"

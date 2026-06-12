@@ -27,6 +27,11 @@ const subscriptionSelect = {
   source: true,
   confidence: true,
   createdAt: true,
+  cancellationRequests: {
+    orderBy: { updatedAt: "desc" },
+    take: 1,
+    select: { status: true },
+  },
 } as const;
 
 export async function GET() {
@@ -44,7 +49,7 @@ export async function GET() {
 
   const normalizedSubscriptions = await rolloverSubscriptions(subscriptions);
 
-  return NextResponse.json(normalizedSubscriptions);
+  return NextResponse.json(normalizedSubscriptions.map(withCancellationStatus));
 }
 
 export async function POST(request: Request) {
@@ -156,7 +161,15 @@ export async function POST(request: Request) {
     });
   }
 
-  return NextResponse.json(subscription, { status: 201 });
+  return NextResponse.json(withCancellationStatus(subscription), { status: 201 });
+}
+
+function withCancellationStatus<T extends { cancellationRequests?: { status: string }[] }>(subscription: T) {
+  const { cancellationRequests, ...rest } = subscription;
+  return {
+    ...rest,
+    cancellationStatus: cancellationRequests?.[0]?.status ?? null,
+  };
 }
 
 export async function DELETE() {
