@@ -1,14 +1,13 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
 
 export default function ConnectPage() {
   return (
-    <main className="min-h-screen bg-[#F0F4F8] px-5 py-8 text-[#0D1B2A]">
-      <section className="mx-auto max-w-3xl">
-        <Link className="text-sm font-semibold text-[#5F6F82] hover:text-[#C8102E]" href="/">
-          Tilbake
-        </Link>
-
-        <div className="mt-6 rounded-2xl bg-white p-7 shadow-sm ring-1 ring-[#DBE4EE] sm:p-10">
+    <main className="min-h-screen bg-[#0D1B2A] text-white">
+      <PublicHeader maxWidthClassName="max-w-3xl" />
+      <section className="mx-auto max-w-3xl px-5 py-8 text-[#0D1B2A]">
+        <div className="rounded-2xl bg-white p-7 shadow-sm ring-1 ring-[#DBE4EE] sm:p-10">
           <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Kommer senere</p>
           <h1 className="mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl">
             Flere måter å finne abonnementer på
@@ -37,6 +36,7 @@ export default function ConnectPage() {
           </Link>
         </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

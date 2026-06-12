@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellation";
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
+import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
@@ -568,6 +569,8 @@ export function DashboardClient() {
           </>
         ) : null}
       </section>
+
+      <AppFooter />
 
       {step === "overview" && selectedIds.length > 0 ? (
         <div className="fixed inset-x-0 bottom-0 border-t border-[#DBE4EE] bg-white/95 px-5 py-4 shadow-2xl backdrop-blur">

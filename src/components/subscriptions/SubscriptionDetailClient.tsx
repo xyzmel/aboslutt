@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { formatNextPaymentDate, normalizeDateInputValue } from "@/lib/subscription-date";
 import type {
@@ -251,6 +252,7 @@ export function SubscriptionDetailClient({
           )}
         </div>
       </section>
+      <AppFooter />
     </main>
   );
 }

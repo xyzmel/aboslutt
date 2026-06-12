@@ -14,9 +14,10 @@ type MobileMenuProps = {
   links: NavigationLink[];
   isAuthenticated: boolean;
   userLabel?: string | null;
+  isAdmin?: boolean;
 };
 
-export function MobileMenu({ links, isAuthenticated, userLabel }: MobileMenuProps) {
+export function MobileMenu({ links, isAuthenticated, userLabel, isAdmin = false }: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -52,6 +53,15 @@ export function MobileMenu({ links, isAuthenticated, userLabel }: MobileMenuProp
                 {link.label}
               </Link>
             ))}
+            {isAuthenticated && isAdmin ? (
+              <Link
+                className="rounded-xl px-3 py-3 font-semibold text-[#C8102E] hover:bg-[#F5E6E9]"
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+              >
+                Admin
+              </Link>
+            ) : null}
             {isAuthenticated ? (
               <button
                 className="rounded-xl px-3 py-3 text-left font-semibold text-[#C8102E] hover:bg-[#F5E6E9]"

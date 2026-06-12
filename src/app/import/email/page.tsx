@@ -4,6 +4,7 @@ import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } fro
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
+import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
 import type { EnrichedImportCandidate } from "@/lib/import-candidates";
@@ -403,6 +404,8 @@ export default function EmailImportPage() {
           />
         ) : null}
       </section>
+
+      <AppFooter />
     </main>
   );
 }

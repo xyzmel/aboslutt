@@ -53,10 +53,7 @@ export function AppHeader({ adminSection = false, maxWidthClassName = "max-w-6xl
   const user = safeUser ?? session?.user ?? null;
   const isAdmin = Boolean(safeUser?.isAdmin);
   const userLabel = user?.name ?? user?.email ?? null;
-  const links = useMemo(
-    () => buildAppLinks(pathname, isAdmin, adminSection),
-    [adminSection, isAdmin, pathname],
-  );
+  const links = useMemo(() => buildAppLinks(pathname, adminSection), [adminSection, pathname]);
 
   return (
     <header className="sticky top-0 z-40 bg-[#0D1B2A] px-5 py-4 text-white shadow-sm shadow-black/10">
@@ -76,7 +73,7 @@ export function AppHeader({ adminSection = false, maxWidthClassName = "max-w-6xl
             </span>
           ) : user ? (
             <div className="hidden sm:block">
-              <UserMenu email={user.email} name={user.name} plan={safeUser?.plan} />
+              <UserMenu email={user.email} isAdmin={isAdmin} name={user.name} plan={safeUser?.plan} />
             </div>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
@@ -88,18 +85,17 @@ export function AppHeader({ adminSection = false, maxWidthClassName = "max-w-6xl
               </Link>
             </div>
           )}
-          <MobileMenu isAuthenticated={Boolean(user)} links={links} userLabel={userLabel} />
+          <MobileMenu isAdmin={isAdmin} isAuthenticated={Boolean(user)} links={links} userLabel={userLabel} />
         </div>
       </div>
     </header>
   );
 }
 
-function buildAppLinks(pathname: string, isAdmin: boolean, adminSection: boolean): NavigationLink[] {
+function buildAppLinks(pathname: string, adminSection: boolean): NavigationLink[] {
   const userLinks: NavigationLink[] = [
     { href: "/dashboard", label: "Oversikt" },
     { href: "/import/email", label: "Importer" },
-    { href: "/settings#varsler", label: "Varsler" },
     { href: "/settings", label: "Innstillinger" },
   ];
 
@@ -109,14 +105,12 @@ function buildAppLinks(pathname: string, isAdmin: boolean, adminSection: boolean
     { href: "/admin/audit", label: "Audit" },
   ];
 
-  const links = adminSection ? adminLinks : [...userLinks, ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : [])];
+  const links = adminSection ? adminLinks : userLinks;
 
   return links.map((link) => ({
     ...link,
     active:
-      link.href === "/settings#varsler"
-        ? pathname === "/settings"
-        : pathname === link.href || (link.href !== "/admin" && pathname.startsWith(`${link.href}/`)),
+      pathname === link.href || (link.href !== "/admin" && pathname.startsWith(`${link.href}/`)),
   }));
 }
 

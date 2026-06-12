@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { getCurrentAppUser } from "@/lib/current-user";
 
@@ -49,6 +50,7 @@ export default async function OnboardingPage() {
           />
         </div>
       </section>
+      <AppFooter />
     </main>
   );
 }

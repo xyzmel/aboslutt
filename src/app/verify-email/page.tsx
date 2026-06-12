@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
 import { prisma } from "@/lib/prisma";
 
 type VerifyEmailPageProps = {
@@ -10,8 +12,10 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
   const result = await verifyToken(token);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0D1B2A] px-5 py-10">
-      <section className="w-full max-w-md rounded-[1.25rem] bg-white p-7 text-center shadow-2xl shadow-black/20 sm:p-9">
+    <main className="min-h-screen bg-[#0D1B2A] text-white">
+      <PublicHeader />
+      <section className="mx-auto w-full max-w-md px-5 py-10">
+        <div className="rounded-[1.25rem] bg-white p-7 text-center shadow-2xl shadow-black/20 sm:p-9">
         <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F5E6E9] text-lg font-extrabold text-[#C8102E]">
           A
         </div>
@@ -23,7 +27,9 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
         >
           Gå til innlogging
         </Link>
+        </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

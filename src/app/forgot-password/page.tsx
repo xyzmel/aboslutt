@@ -2,6 +2,8 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
 
 const safeMessage = "Hvis e-posten finnes, sender vi deg en lenke.";
 
@@ -26,8 +28,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#0D1B2A] px-5 py-10">
-      <section className="w-full max-w-md">
+    <main className="min-h-screen bg-[#0D1B2A] text-white">
+      <PublicHeader />
+      <section className="mx-auto w-full max-w-md px-5 py-10">
         <Link className="mb-6 inline-flex text-sm font-medium text-white/55 hover:text-white" href="/login">
           Tilbake til innlogging
         </Link>
@@ -70,6 +73,7 @@ export default function ForgotPasswordPage() {
           ) : null}
         </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

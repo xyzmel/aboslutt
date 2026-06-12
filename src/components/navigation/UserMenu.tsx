@@ -7,9 +7,10 @@ type UserMenuProps = {
   name?: string | null;
   email?: string | null;
   plan?: string | null;
+  isAdmin?: boolean;
 };
 
-export function UserMenu({ name, email, plan }: UserMenuProps) {
+export function UserMenu({ name, email, plan, isAdmin = false }: UserMenuProps) {
   const label = name ?? email ?? "Min konto";
   const initials = getInitials(name, email);
 
@@ -25,13 +26,21 @@ export function UserMenu({ name, email, plan }: UserMenuProps) {
         <div className="border-b border-[#DBE4EE] p-4">
           <p className="truncate text-sm font-bold">{label}</p>
           {email ? <p className="mt-1 truncate text-xs text-[#5F6F82]">{email}</p> : null}
-          <p className="mt-2 text-xs font-bold uppercase tracking-wide text-[#C8102E]">
-            Plan: {formatPlan(plan)}
-          </p>
+          <span className="mt-2 inline-flex rounded-full bg-[#F5E6E9] px-2.5 py-1 text-xs font-bold text-[#C8102E]">
+            {formatPlan(plan)}
+          </span>
         </div>
         <div className="grid p-2 text-sm font-semibold">
-          <Link className="rounded-xl px-3 py-2 hover:bg-[#F0F4F8]" href="/settings#plan">
-            Min plan
+          <Link className="rounded-xl px-3 py-2 hover:bg-[#F0F4F8]" href="/dashboard">
+            Oversikt
+          </Link>
+          {isAdmin ? (
+            <Link className="rounded-xl px-3 py-2 text-[#C8102E] hover:bg-[#F5E6E9]" href="/admin">
+              Admin
+            </Link>
+          ) : null}
+          <Link className="rounded-xl px-3 py-2 hover:bg-[#F0F4F8]" href="/pricing">
+            Min plan/priser
           </Link>
           <Link className="rounded-xl px-3 py-2 hover:bg-[#F0F4F8]" href="/settings">
             Innstillinger

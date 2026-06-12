@@ -47,8 +47,8 @@ export function PublicHeader({ maxWidthClassName = "max-w-6xl" }: { maxWidthClas
 
   const user = safeUser ?? session?.user ?? null;
   const links = useMemo(
-    () => buildPublicLinks(pathname, Boolean(user), Boolean(safeUser?.isAdmin)),
-    [pathname, safeUser?.isAdmin, user],
+    () => buildPublicLinks(pathname, Boolean(user)),
+    [pathname, user],
   );
 
   return (
@@ -63,19 +63,16 @@ export function PublicHeader({ maxWidthClassName = "max-w-6xl" }: { maxWidthClas
         <div className="flex items-center gap-2">
           {user ? (
             <div className="hidden sm:block">
-              <UserMenu email={user.email} name={user.name} plan={safeUser?.plan} />
+              <UserMenu
+                email={user.email}
+                isAdmin={Boolean(safeUser?.isAdmin)}
+                name={user.name}
+                plan={safeUser?.plan}
+              />
             </div>
-          ) : (
-            <div className="hidden items-center gap-2 sm:flex">
-              <Link className="rounded-xl px-3 py-2 text-sm font-bold text-white/70 hover:text-white" href="/login">
-                Logg inn
-              </Link>
-              <Link className="rounded-xl bg-[#C8102E] px-4 py-2 text-sm font-bold text-white hover:bg-[#a90d27]" href="/register">
-                Start gratis
-              </Link>
-            </div>
-          )}
+          ) : null}
           <MobileMenu
+            isAdmin={Boolean(safeUser?.isAdmin)}
             isAuthenticated={Boolean(user)}
             links={links}
             userLabel={user?.name ?? user?.email ?? null}
@@ -86,13 +83,12 @@ export function PublicHeader({ maxWidthClassName = "max-w-6xl" }: { maxWidthClas
   );
 }
 
-function buildPublicLinks(pathname: string, isAuthenticated: boolean, isAdmin: boolean): NavigationLink[] {
+function buildPublicLinks(pathname: string, isAuthenticated: boolean): NavigationLink[] {
   const links: NavigationLink[] = isAuthenticated
     ? [
         { href: "/dashboard", label: "Gå til oversikt" },
         { href: "/import/email", label: "Importer e-post" },
         { href: "/settings", label: "Innstillinger" },
-        ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
       ]
     : [
         { href: "/#produkt", label: "Produkt" },

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getProviders, signIn } from "next-auth/react";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
+import { PublicFooter } from "@/components/public/PublicFooter";
 
 type AuthMode = "login" | "register";
 type RequestState = "idle" | "loading" | "success" | "error";
@@ -268,6 +269,7 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
           </Link>
         </div>
       </section>
+      <PublicFooter />
     </main>
   );
 }

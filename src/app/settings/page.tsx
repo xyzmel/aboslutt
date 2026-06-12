@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { SettingsClient } from "@/components/settings/SettingsClient";
 import { isAdminUser } from "@/lib/admin";
@@ -103,6 +104,7 @@ export default async function SettingsPage() {
         vippsConnected={Boolean(vippsAccount)}
         vippsConfigured={isVippsConfigured()}
       />
+      <AppFooter />
     </main>
   );
 }
