@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -22,6 +23,7 @@ export async function GET() {
       email: currentUser.email,
       name: currentUser.name,
       image: currentUser.image,
+      isAdmin: isAdminUser(currentUser),
       providers: {
         email: Boolean(currentUser.passwordHash || currentUser.emailVerified),
         google: providerSet.has("google"),

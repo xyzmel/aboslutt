@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { SettingsClient } from "@/components/settings/SettingsClient";
+import { isAdminUser } from "@/lib/admin";
 import { getCurrentAppUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
@@ -85,6 +86,7 @@ export default async function SettingsPage() {
         gmailScopeConnected={gmailScopeConnected}
         googleConnected={gmailScopeConnected && !googleReconnectRequired}
         googleReconnectRequired={googleReconnectRequired}
+        isAdmin={isAdminUser(currentUser)}
         monthlySummaryEnabled={notificationPreferences.monthlySummaryEnabled}
         name={currentUser.name}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}

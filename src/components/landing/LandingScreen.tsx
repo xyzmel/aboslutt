@@ -15,6 +15,7 @@ type LandingScreenProps = {
   user: {
     name: string | null;
     email: string | null;
+    isAdmin: boolean;
   } | null;
 };
 
@@ -47,6 +48,11 @@ export function LandingScreen({ user }: LandingScreenProps) {
                   <Link className="text-white/60 hover:text-white" href="/settings">
                     Innstillinger
                   </Link>
+                  {user.isAdmin ? (
+                    <Link className="text-white/60 hover:text-white" href="/admin">
+                      Admin
+                    </Link>
+                  ) : null}
                   <button
                     className="text-white/60 hover:text-white"
                     onClick={() => signOut({ callbackUrl: "/login" })}

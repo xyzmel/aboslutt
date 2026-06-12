@@ -9,6 +9,7 @@ type SettingsClientProps = {
   googleConnected: boolean;
   gmailScopeConnected: boolean;
   googleReconnectRequired: boolean;
+  isAdmin: boolean;
   emailRemindersEnabled: boolean;
   reminderDaysBefore: number;
   monthlySummaryEnabled: boolean;
@@ -20,6 +21,7 @@ export function SettingsClient({
   googleConnected,
   gmailScopeConnected,
   googleReconnectRequired,
+  isAdmin,
   emailRemindersEnabled,
   reminderDaysBefore,
   monthlySummaryEnabled,
@@ -148,6 +150,14 @@ export function SettingsClient({
           >
             Logg ut
           </button>
+          {isAdmin ? (
+            <a
+              className="ml-3 inline-flex rounded-xl bg-[#0D1B2A] px-5 py-3 text-sm font-bold text-white hover:bg-[#15283c]"
+              href="/admin"
+            >
+              Admin
+            </a>
+          ) : null}
         </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">

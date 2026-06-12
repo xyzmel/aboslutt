@@ -254,6 +254,24 @@ Slik tester du session-håndtering:
 - Utlogget `/dashboard`, `/settings`, `/import/email` og `/subscriptions/[id]` skal sende brukeren til `/login`.
 - Innlogget `/dashboard` skal vise riktig bruker og bare brukerens egne abonnementer.
 
+## Admin Portal
+
+`/admin` er en enkel beta-admin for produktoversikt og brukerhandtering. Den krever innlogging, og bare e-postadresser i `ADMIN_EMAILS` far tilgang.
+
+Legg inn lokalt i `.env.local` og i Vercel Environment Variables:
+
+```bash
+ADMIN_EMAILS=kjetil@example.com,admin@example.com
+```
+
+Admin-portalen viser bare trygge felt: brukerstatistikk, abonnementstellinger, provider-navn, varselstatus, plan og bekreftet e-poststatus. Den skal aldri eksponere passordhash, OAuth access tokens, refresh tokens, ID tokens, `DATABASE_URL`, secrets eller ra Gmail-innhold.
+
+Etter admin-/feedback-migrasjonen ma produksjonsdatabasen migreres:
+
+```bash
+npm run prisma:deploy
+```
+
 ## Notifications And Cron Jobs
 
 Aboslutt kan sende e-postvarsler før kommende abonnementstrekk. Brukeren styrer dette fra `/settings` under `Varsler`:

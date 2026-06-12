@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth";
 import { LandingScreen } from "@/components/landing/LandingScreen";
+import { isAdminUser } from "@/lib/admin";
 import { authOptions } from "@/lib/auth";
 
 export default async function Home() {
@@ -12,6 +13,7 @@ export default async function Home() {
           ? {
               name: session.user.name ?? null,
               email: session.user.email ?? null,
+              isAdmin: isAdminUser({ email: session.user.email ?? null }),
             }
           : null
       }

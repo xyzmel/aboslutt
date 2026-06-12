@@ -14,6 +14,7 @@ model User {
   emailVerified DateTime?
   passwordHash  String?
   image         String?
+  plan          String         @default("free")
   emailRemindersEnabled Boolean @default(true)
   reminderDaysBefore Int @default(3)
   monthlySummaryEnabled Boolean @default(false)
@@ -22,9 +23,23 @@ model User {
   accounts      Account[]
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
+  feedback      Feedback[]
   reminderLogs  ReminderLog[]
   sessions      Session[]
   subscriptions Subscription[]
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String?
+  email     String?
+  message   String
+  rating    Int?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model Account {

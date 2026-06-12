@@ -88,6 +88,7 @@ export function DashboardClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -102,6 +103,12 @@ export function DashboardClient() {
         }
         const subscriptions = (await response.json()) as Subscription[];
         setSubscriptionList(subscriptions);
+
+        const meResponse = await fetch("/api/me", { cache: "no-store" });
+        if (meResponse.ok) {
+          const meResult = (await meResponse.json()) as { user?: { isAdmin?: boolean } };
+          setIsAdmin(Boolean(meResult.user?.isAdmin));
+        }
       } catch {
         setErrorMessage("Kunne ikke hente abonnementer fra databasen.");
       } finally {
@@ -324,6 +331,11 @@ export function DashboardClient() {
             <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/settings">
               Innstillinger
             </Link>
+            {isAdmin ? (
+              <Link className="text-sm font-semibold text-white/60 hover:text-white" href="/admin">
+                Admin
+              </Link>
+            ) : null}
             {isSessionLoading ? (
               <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white/70">
                 Henter bruker...
