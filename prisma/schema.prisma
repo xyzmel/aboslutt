@@ -42,6 +42,23 @@ model Feedback {
   @@index([createdAt])
 }
 
+model JobRun {
+  id               String   @id @default(cuid())
+  type             String
+  status           String
+  dryRun           Boolean  @default(false)
+  triggeredByEmail String?
+  usersChecked     Int      @default(0)
+  emailsSent       Int      @default(0)
+  remindersCreated Int      @default(0)
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  completedAt      DateTime?
+
+  @@index([type])
+  @@index([createdAt])
+}
+
 model Account {
   id                String  @id @default(cuid())
   userId            String

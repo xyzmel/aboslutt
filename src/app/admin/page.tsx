@@ -212,6 +212,9 @@ function AdminHeader({ adminEmail }: { adminEmail: string | null }) {
           <Link className="text-white/60 hover:text-white" href="/dashboard">
             Oversikt
           </Link>
+          <Link className="text-white/60 hover:text-white" href="/admin/jobs">
+            Jobber
+          </Link>
           <Link className="text-white/60 hover:text-white" href="/settings">
             Innstillinger
           </Link>

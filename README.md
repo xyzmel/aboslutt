@@ -325,6 +325,17 @@ npm run prisma:deploy
 
 Ikke bruk `prisma migrate reset` i produksjon.
 
+### Test Notification Jobs From Admin
+
+Admin-brukere kan teste e-postjobber fra `/admin/jobs`.
+
+- `Dry-run` teller hvor mange brukere og e-poster som ville blitt behandlet uten aa sende e-post.
+- `Test kommende trekk-varsler` kjorer kommende trekk-jobben via en intern admin-API.
+- `Test maanedlig oppsummering` kjorer maanedsoppsummeringen via en intern admin-API.
+- `Send test-e-post` sender en test til innlogget admin-e-post.
+
+Nettleseren faar aldri `CRON_SECRET`, SMTP-passord eller andre secrets. Admin-API-ene krever innlogget admin-bruker via `ADMIN_EMAILS`.
+
 ## Email Og Gmail Import
 
 `/import/email` har to flyter:
