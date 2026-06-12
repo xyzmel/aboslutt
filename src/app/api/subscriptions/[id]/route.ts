@@ -32,7 +32,7 @@ const subscriptionSelect = {
   cancellationRequests: {
     orderBy: { updatedAt: "desc" },
     take: 1,
-    select: { status: true },
+    select: { id: true, status: true, sentAt: true, updatedAt: true },
   },
 } as const;
 
@@ -151,11 +151,22 @@ export async function PATCH(request: Request, context: RouteContext) {
   return NextResponse.json(withCancellationStatus(await rolloverSubscription(subscription)));
 }
 
-function withCancellationStatus<T extends { cancellationRequests?: { status: string }[] }>(subscription: T) {
+function withCancellationStatus<T extends {
+  cancellationRequests?: { id: string; status: string; sentAt: Date | null; updatedAt: Date }[];
+}>(subscription: T) {
   const { cancellationRequests, ...rest } = subscription;
+  const cancellationRequest = cancellationRequests?.[0] ?? null;
   return {
     ...rest,
-    cancellationStatus: cancellationRequests?.[0]?.status ?? null,
+    cancellationStatus: cancellationRequest?.status ?? null,
+    cancellationRequest: cancellationRequest
+      ? {
+          id: cancellationRequest.id,
+          status: cancellationRequest.status,
+          sentAt: cancellationRequest.sentAt?.toISOString() ?? null,
+          updatedAt: cancellationRequest.updatedAt.toISOString(),
+        }
+      : null,
   };
 }
 

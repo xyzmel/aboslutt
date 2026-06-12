@@ -174,18 +174,49 @@ export const cancellationProviders: CancellationProvider[] = [
     requiresCustomerNumber: true,
     confidence: "needs_review",
   },
+  {
+    id: "sats",
+    displayName: "SATS",
+    normalizedNames: ["sats"],
+    category: "health",
+    method: "account_page",
+    supportUrl: "https://www.sats.no/kundeservice",
+    notes: "Treningsabonnementer kan ha bindingstid, frysing eller oppsigelsesfrist. Kontroller oppsigelse på SATS-kontoen eller hos kundeservice.",
+    requiresLogin: true,
+    requiresCustomerNumber: true,
+    confidence: "needs_review",
+  },
+  {
+    id: "evo",
+    displayName: "EVO",
+    normalizedNames: ["evo", "evo fitness"],
+    category: "health",
+    method: "account_page",
+    supportUrl: "https://www.evofitness.no/",
+    notes: "Treningsabonnementer kan ha bindingstid eller oppsigelsesfrist. Kontroller oppsigelse på EVO-kontoen eller hos kundeservice.",
+    requiresLogin: true,
+    requiresCustomerNumber: true,
+    confidence: "needs_review",
+  },
 ];
 
-export function findCancellationProvider(subscriptionName: string | null | undefined) {
-  const normalizedSubscriptionName = normalizeProviderName(subscriptionName ?? "");
+export function findCancellationProvider(...subscriptionNames: (string | null | undefined)[]) {
+  const normalizedSubscriptionNames = subscriptionNames
+    .map((name) => normalizeProviderName(name ?? ""))
+    .filter(Boolean);
 
-  if (!normalizedSubscriptionName) {
+  if (normalizedSubscriptionNames.length === 0) {
     return null;
   }
 
   return (
     cancellationProviders.find((provider) =>
-      provider.normalizedNames.some((name) => normalizedSubscriptionName.includes(normalizeProviderName(name))),
+      provider.normalizedNames.some((name) => {
+        const normalizedProviderName = normalizeProviderName(name);
+        return normalizedSubscriptionNames.some((subscriptionName) =>
+          subscriptionName.includes(normalizedProviderName),
+        );
+      }),
     ) ?? null
   );
 }

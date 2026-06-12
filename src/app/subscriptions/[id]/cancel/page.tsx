@@ -30,6 +30,7 @@ export default async function CancelSubscriptionPage({ params }: CancelPageProps
       monthlyCost: true,
       status: true,
       billingInterval: true,
+      normalizedName: true,
       nextPayment: true,
       note: true,
       source: true,
@@ -62,6 +63,10 @@ export default async function CancelSubscriptionPage({ params }: CancelPageProps
       providerResponse: true,
       createdAt: true,
       updatedAt: true,
+      events: {
+        orderBy: { createdAt: "asc" },
+        select: { id: true, type: true, message: true, createdAt: true },
+      },
     },
   });
 
@@ -73,7 +78,7 @@ export default async function CancelSubscriptionPage({ params }: CancelPageProps
         currentUserEmail={currentUser.email}
         currentUserName={currentUser.name}
         initialRequest={latestRequest}
-        provider={findCancellationProvider(subscription.name)}
+        provider={findCancellationProvider(subscription.name, subscription.normalizedName)}
         subscription={toSubscriptionView(subscription)}
       />
       <AppFooter compact />
@@ -88,6 +93,7 @@ function toSubscriptionView(subscription: {
   monthlyCost: number;
   status: string;
   billingInterval: string;
+  normalizedName: string | null;
   nextPayment: string;
   note: string | null;
   source: string | null;

@@ -249,10 +249,24 @@ model CancellationRequest {
   updatedAt        DateTime @updatedAt
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  events           CancellationEvent[]
 
   @@index([userId])
   @@index([subscriptionId])
   @@index([status])
+  @@index([createdAt])
+}
+
+model CancellationEvent {
+  id                    String   @id @default(cuid())
+  cancellationRequestId String
+  type                  String
+  message               String
+  createdAt             DateTime @default(now())
+  cancellationRequest   CancellationRequest @relation(fields: [cancellationRequestId], references: [id], onDelete: Cascade)
+
+  @@index([cancellationRequestId])
+  @@index([type])
   @@index([createdAt])
 }
 

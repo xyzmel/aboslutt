@@ -69,6 +69,10 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
             rejectedAt: true,
             createdAt: true,
             subscription: { select: { name: true } },
+            events: {
+              orderBy: { createdAt: "asc" },
+              select: { id: true, type: true, message: true, createdAt: true },
+            },
           },
         },
       },
@@ -136,6 +140,18 @@ export default async function AdminUserDetailPage({ params }: AdminUserDetailPag
                           {request.status} · {request.method} · {request.recipientEmail}
                         </p>
                         <p className="mt-1 text-xs text-[#5F6F82]">{formatDate(request.createdAt)}</p>
+                        {request.events.length > 0 ? (
+                          <ol className="mt-3 grid gap-2 border-t border-[#DBE4EE] pt-3">
+                            {request.events.map((event) => (
+                              <li key={event.id}>
+                                <p className="text-xs font-bold text-[#0D1B2A]">{formatCancellationEvent(event.type)}</p>
+                                <p className="mt-0.5 text-xs text-[#5F6F82]">
+                                  {event.message} · {formatDate(event.createdAt)}
+                                </p>
+                              </li>
+                            ))}
+                          </ol>
+                        ) : null}
                       </div>
                     ))
                   ) : (
@@ -279,6 +295,21 @@ function formatDate(date: Date) {
     month: "short",
     year: "numeric",
   }).format(date);
+}
+
+function formatCancellationEvent(type: string) {
+  const labels: Record<string, string> = {
+    draft_created: "Utkast opprettet",
+    ready: "Klar til sending",
+    email_sent: "Sendt på vegne av bruker",
+    awaiting_confirmation: "Venter på bekreftelse",
+    confirmed_cancelled: "Bekreftet avsluttet",
+    rejected: "Avvist",
+    manual_required: "Krever manuell handling",
+    note_added: "Notat",
+  };
+
+  return labels[type] ?? type;
 }
 
 function logAdminError(route: string, error: unknown, userId?: string) {

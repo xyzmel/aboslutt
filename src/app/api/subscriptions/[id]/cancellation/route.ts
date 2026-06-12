@@ -3,6 +3,7 @@ import {
   createCancellationDraft,
   isCancellationStatus,
   logCancellationAudit,
+  logCancellationEvent,
 } from "@/lib/cancellation";
 import { cancellationProviders } from "@/data/cancellation-providers";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
@@ -31,6 +32,10 @@ const requestSelect = {
   providerResponse: true,
   createdAt: true,
   updatedAt: true,
+  events: {
+    orderBy: { createdAt: "asc" },
+    select: { id: true, type: true, message: true, createdAt: true },
+  },
 } as const;
 
 export async function GET(_request: Request, context: RouteContext) {
@@ -115,8 +120,21 @@ export async function POST(request: Request, context: RouteContext) {
     cancellationRequestId: cancellationRequest.id,
     action: "cancellation_draft_created",
   });
+  await logCancellationEvent({
+    cancellationRequestId: cancellationRequest.id,
+    type: "draft_created",
+    message: "Utkastet ble opprettet.",
+  });
+  await logCancellationEvent({
+    cancellationRequestId: cancellationRequest.id,
+    type: "ready",
+    message: "Oppsigelsen er klar til sending eller manuell bruk.",
+  });
 
-  return NextResponse.json({ ok: true, request: cancellationRequest }, { status: 201 });
+  return NextResponse.json(
+    { ok: true, request: await getCancellationRequestById(cancellationRequest.id) },
+    { status: 201 },
+  );
 }
 
 export async function PATCH(request: Request, context: RouteContext) {
@@ -153,13 +171,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (action === "status") {
     const status = getString(payload.status);
-    if (!isCancellationStatus(status) || !["confirmed_cancelled", "rejected", "manual_required"].includes(status)) {
+    if (!isCancellationStatus(status) || !isFollowUpStatus(status)) {
       return NextResponse.json({ ok: false, error: "INVALID_STATUS", message: "Ugyldig status." }, { status: 400 });
     }
 
     const now = new Date();
-    const updated = await prisma.$transaction(async (tx) => {
-      const requestUpdate = await tx.cancellationRequest.update({
+    await prisma.$transaction(async (tx) => {
+      await tx.cancellationRequest.update({
         where: { id: cancellationRequest.id },
         data: {
           status,
@@ -176,7 +194,6 @@ export async function PATCH(request: Request, context: RouteContext) {
         });
       }
 
-      return requestUpdate;
     });
 
     await logCancellationAudit({
@@ -185,8 +202,34 @@ export async function PATCH(request: Request, context: RouteContext) {
       cancellationRequestId: cancellationRequest.id,
       action: `cancellation_${status}`,
     });
+    await logCancellationEvent({
+      cancellationRequestId: cancellationRequest.id,
+      type: status,
+      message: getStatusEventMessage(status),
+    });
 
-    return NextResponse.json({ ok: true, request: updated });
+    return NextResponse.json({ ok: true, request: await getCancellationRequestById(cancellationRequest.id) });
+  }
+
+  if (action === "note") {
+    const note = getString(payload.note);
+    if (!note) {
+      return NextResponse.json({ ok: false, error: "INVALID_NOTE", message: "Notatet kan ikke være tomt." }, { status: 400 });
+    }
+
+    await logCancellationEvent({
+      cancellationRequestId: cancellationRequest.id,
+      type: "note_added",
+      message: note,
+    });
+    await logCancellationAudit({
+      userId: currentUser.id,
+      subscriptionId: subscription.id,
+      cancellationRequestId: cancellationRequest.id,
+      action: "cancellation_note_added",
+    });
+
+    return NextResponse.json({ ok: true, request: await getCancellationRequestById(cancellationRequest.id) });
   }
 
   return NextResponse.json({ ok: false, error: "INVALID_ACTION", message: "Ugyldig handling." }, { status: 400 });
@@ -262,14 +305,31 @@ async function sendCancellationEmail({
     cancellationRequestId: cancellationRequest.id,
     action: "cancellation_email_sent",
   });
+  await logCancellationEvent({
+    cancellationRequestId: cancellationRequest.id,
+    type: "email_sent",
+    message: "Oppsigelsen ble sendt via Aboslutt på vegne av brukeren.",
+  });
+  await logCancellationEvent({
+    cancellationRequestId: cancellationRequest.id,
+    type: "awaiting_confirmation",
+    message: "Venter på bekreftelse fra leverandøren.",
+  });
 
-  return NextResponse.json({ ok: true, request: updated });
+  return NextResponse.json({ ok: true, request: await getCancellationRequestById(updated.id) });
 }
 
 function getOwnedSubscription(id: string, userId: string) {
   return prisma.subscription.findFirst({
     where: { id, userId },
     select: { id: true, name: true },
+  });
+}
+
+function getCancellationRequestById(id: string) {
+  return prisma.cancellationRequest.findUniqueOrThrow({
+    where: { id },
+    select: requestSelect,
   });
 }
 
@@ -321,4 +381,20 @@ function escapeHtml(value: string) {
     };
     return entities[char];
   });
+}
+
+function isFollowUpStatus(
+  status: string,
+): status is "confirmed_cancelled" | "rejected" | "manual_required" {
+  return ["confirmed_cancelled", "rejected", "manual_required"].includes(status);
+}
+
+function getStatusEventMessage(status: "confirmed_cancelled" | "rejected" | "manual_required") {
+  const messages = {
+    confirmed_cancelled: "Brukeren markerte oppsigelsen som bekreftet avsluttet.",
+    rejected: "Brukeren markerte oppsigelsen som avvist.",
+    manual_required: "Brukeren markerte at oppsigelsen krever manuell handling.",
+  };
+
+  return messages[status];
 }

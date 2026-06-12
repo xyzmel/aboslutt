@@ -7,7 +7,7 @@ import {
   type CancellationProviderMethod,
   getCancellationMethodLabel,
 } from "@/data/cancellation-providers";
-import { getCancellationStatusLabel } from "@/lib/cancellation";
+import { getCancellationEventLabel, getCancellationStatusLabel } from "@/lib/cancellation";
 import type { Subscription } from "@/types/subscription";
 
 type CancellationRequestView = {
@@ -27,6 +27,14 @@ type CancellationRequestView = {
   providerResponse: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
+  events?: CancellationEventView[];
+};
+
+type CancellationEventView = {
+  id: string;
+  type: string;
+  message: string;
+  createdAt: Date | string;
 };
 
 type CancellationEmailClientProps = {
@@ -75,6 +83,7 @@ export function CancellationEmailClient({
   });
   const [consentConfirmed, setConsentConfirmed] = useState(Boolean(initialRequest?.consentConfirmed));
   const [message, setMessage] = useState<string | null>(null);
+  const [note, setNote] = useState("");
   const [isWorking, setIsWorking] = useState(false);
   const statusLabel = getCancellationStatusLabel(request?.status);
   const canSendEmailMethod = form.method === "email" && Boolean(form.recipientEmail);
@@ -199,6 +208,37 @@ export function CancellationEmailClient({
     }
   }
 
+  async function addNote() {
+    if (!request || !note.trim()) {
+      setMessage("Skriv et notat først.");
+      return;
+    }
+
+    setIsWorking(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch(`/api/subscriptions/${subscription.id}/cancellation`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "note", requestId: request.id, note }),
+      });
+      const result = (await response.json()) as { ok?: boolean; message?: string; request?: CancellationRequestView };
+
+      if (!response.ok || !result.request) {
+        throw new Error(result.message ?? "Kunne ikke lagre notatet.");
+      }
+
+      setRequest(result.request);
+      setNote("");
+      setMessage("Notatet er lagt til.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunne ikke lagre notatet.");
+    } finally {
+      setIsWorking(false);
+    }
+  }
+
   async function copyDraft() {
     await navigator.clipboard.writeText(`${form.subject}\n\n${form.body}`).catch(() => null);
     setMessage("Utkastet er kopiert.");
@@ -221,6 +261,10 @@ export function CancellationEmailClient({
           </dl>
 
           <ProviderGuidance provider={provider} />
+
+          <div className="mt-5 rounded-xl bg-[#FFF6E8] p-4 text-sm font-semibold leading-6 text-[#8A4B13]">
+            Ikke alle leverandører godtar oppsigelse på e-post. Bruk anbefalt metode når Aboslutt kjenner den.
+          </div>
 
           <div className="mt-5 rounded-xl bg-[#FFF6E8] p-4 text-sm leading-6 text-[#8A4B13]">
             Aboslutt sender bare e-post på dine vegne når du godkjenner det. Abonnementet regnes ikke som avsluttet før leverandøren bekrefter det.
@@ -365,6 +409,32 @@ export function CancellationEmailClient({
             </div>
           ) : null}
 
+          {request ? (
+            <section className="mt-6 rounded-2xl bg-white p-4 ring-1 ring-[#DBE4EE]">
+              <h2 className="text-sm font-extrabold">Tidslinje</h2>
+              <CancellationTimeline events={request.events ?? []} status={request.status} />
+              <div className="mt-5 border-t border-[#DBE4EE] pt-4">
+                <label className="text-sm font-semibold text-[#4A5568]">
+                  Legg til notat
+                  <textarea
+                    className="mt-2 min-h-24 w-full rounded-xl border border-[#DBE4EE] px-4 py-3 text-sm leading-6 text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+                    onChange={(event) => setNote(event.target.value)}
+                    placeholder="F.eks. Leverandør svarte at jeg må logge inn og avslutte selv."
+                    value={note}
+                  />
+                </label>
+                <button
+                  className="mt-3 rounded-xl border border-[#DBE4EE] px-5 py-3 text-sm font-bold hover:border-[#C8102E]/50 disabled:opacity-50"
+                  disabled={isWorking || !note.trim()}
+                  onClick={addNote}
+                  type="button"
+                >
+                  Legg til notat
+                </button>
+              </div>
+            </section>
+          ) : null}
+
           {message ? (
             <p className="mt-4 rounded-xl bg-[#F0F4F8] px-4 py-3 text-sm font-semibold text-[#0D1B2A]">
               {message}
@@ -373,6 +443,34 @@ export function CancellationEmailClient({
         </div>
       </div>
     </section>
+  );
+}
+
+function CancellationTimeline({
+  events,
+  status,
+}: {
+  events: CancellationEventView[];
+  status: string;
+}) {
+  const fallbackSteps = getFallbackTimeline(status);
+  const visibleEvents = events.length > 0 ? events : fallbackSteps;
+
+  return (
+    <ol className="mt-4 grid gap-3">
+      {visibleEvents.map((event, index) => (
+        <li className="flex gap-3" key={event.id}>
+          <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#C8102E] text-xs font-black text-white">
+            {index + 1}
+          </span>
+          <div>
+            <p className="text-sm font-bold text-[#0D1B2A]">{getCancellationEventLabel(event.type)}</p>
+            <p className="mt-1 text-sm leading-6 text-[#5F6F82]">{event.message}</p>
+            <p className="mt-1 text-xs font-semibold text-[#5F6F82]">{formatTimelineDate(event.createdAt)}</p>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }
 
@@ -520,4 +618,65 @@ function getInitialMethod(value: string | null | undefined, provider: Cancellati
   }
 
   return provider?.method ?? "email";
+}
+
+function getFallbackTimeline(status: string): CancellationEventView[] {
+  const now = new Date().toISOString();
+  const baseSteps: CancellationEventView[] = [
+    {
+      id: "fallback-draft",
+      type: "draft_created",
+      message: "Utkastet er opprettet.",
+      createdAt: now,
+    },
+    {
+      id: "fallback-ready",
+      type: "ready",
+      message: "Oppsigelsen er klar til sending eller manuell bruk.",
+      createdAt: now,
+    },
+  ];
+
+  if (["awaiting_confirmation", "confirmed_cancelled", "rejected", "manual_required"].includes(status)) {
+    baseSteps.push(
+      {
+        id: "fallback-email-sent",
+        type: "email_sent",
+        message: "Oppsigelsen er sendt på vegne av bruker.",
+        createdAt: now,
+      },
+      {
+        id: "fallback-awaiting",
+        type: "awaiting_confirmation",
+        message: "Venter på bekreftelse fra leverandøren.",
+        createdAt: now,
+      },
+    );
+  }
+
+  if (["confirmed_cancelled", "rejected", "manual_required"].includes(status)) {
+    baseSteps.push({
+      id: `fallback-${status}`,
+      type: status,
+      message: getCancellationStatusLabel(status) ?? "Status er oppdatert.",
+      createdAt: now,
+    });
+  }
+
+  return baseSteps;
+}
+
+function formatTimelineDate(value: Date | string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("nb-NO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
 }

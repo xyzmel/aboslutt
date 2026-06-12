@@ -27,6 +27,8 @@ export default async function AdminPage() {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenDaysAgoForCancellations = new Date();
+    sevenDaysAgoForCancellations.setDate(sevenDaysAgoForCancellations.getDate() - 7);
 
     const [
       totalUsers,
@@ -45,8 +47,10 @@ export default async function AdminPage() {
       lowConfidenceConfirmedCount,
       totalCancellationRequests,
       awaitingCancellationRequests,
+      staleAwaitingCancellationRequests,
       confirmedCancellationRequests,
       manualCancellationRequests,
+      rejectedCancellationRequests,
       importIssueTypeCounts,
       latestImportFeedback,
       latestBetaRequests,
@@ -79,8 +83,15 @@ export default async function AdminPage() {
       }),
       prisma.cancellationRequest.count(),
       prisma.cancellationRequest.count({ where: { status: "awaiting_confirmation" } }),
+      prisma.cancellationRequest.count({
+        where: {
+          status: "awaiting_confirmation",
+          sentAt: { lt: sevenDaysAgoForCancellations },
+        },
+      }),
       prisma.cancellationRequest.count({ where: { status: "confirmed_cancelled" } }),
       prisma.cancellationRequest.count({ where: { status: "manual_required" } }),
+      prisma.cancellationRequest.count({ where: { status: "rejected" } }),
       prisma.importFeedback.groupBy({
         by: ["issueType"],
         _count: { issueType: true },
@@ -163,8 +174,10 @@ export default async function AdminPage() {
       ["Lav tillit lagret", lowConfidenceConfirmedCount],
       ["Oppsigelser startet", totalCancellationRequests],
       ["Venter bekreftelse", awaitingCancellationRequests],
+      ["Venter over 7 dager", staleAwaitingCancellationRequests],
       ["Bekreftet avsluttet", confirmedCancellationRequests],
       ["Krever manuell handling", manualCancellationRequests],
+      ["Avvist", rejectedCancellationRequests],
       ["Månedsoppsummering aktivert", monthlySummaryEnabledCount],
     ];
 

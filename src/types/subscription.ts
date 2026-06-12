@@ -17,5 +17,11 @@ export type Subscription = {
   source?: string | null;
   confidence?: number | null;
   cancellationStatus?: string | null;
+  cancellationRequest?: {
+    id: string;
+    status: string;
+    sentAt?: string | null;
+    updatedAt?: string | null;
+  } | null;
   createdAt?: string;
 };

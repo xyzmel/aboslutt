@@ -10,6 +10,7 @@ import { AppFooter } from "@/components/navigation/AppFooter";
 import { AppHeader } from "@/components/navigation/AppHeader";
 import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
+import { getCancellationStatusLabel } from "@/lib/cancellation";
 import {
   formatDateForShortDisplay,
   normalizeDateInputValue,
@@ -161,6 +162,7 @@ export function DashboardClient() {
     0,
   );
   const upcomingPayments = useMemo(() => getUpcomingPayments(subscriptionList), [subscriptionList]);
+  const cancellationFollowUps = useMemo(() => getCancellationFollowUps(subscriptionList), [subscriptionList]);
   const hasSubscriptions = subscriptionList.length > 0;
   const hasAnyNextPayment = subscriptionList.some((subscription) =>
     Boolean(parseNextPaymentDate(subscription.nextPayment)),
@@ -333,6 +335,42 @@ export function DashboardClient() {
     }
   }
 
+  async function updateCancellationRequest(
+    subscription: Subscription,
+    action: "send" | "status",
+    status?: "confirmed_cancelled" | "manual_required",
+  ) {
+    if (!subscription.cancellationRequest) {
+      return;
+    }
+
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch(`/api/subscriptions/${subscription.id}/cancellation`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action,
+          requestId: subscription.cancellationRequest.id,
+          status,
+        }),
+      });
+
+      if (!response.ok) {
+        const result = (await response.json().catch(() => ({}))) as { message?: string };
+        throw new Error(result.message ?? "Kunne ikke oppdatere oppsigelsen.");
+      }
+
+      const subscriptionsResponse = await fetch("/api/subscriptions", { cache: "no-store" });
+      if (subscriptionsResponse.ok) {
+        setSubscriptionList((await subscriptionsResponse.json()) as Subscription[]);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Kunne ikke oppdatere oppsigelsen.");
+    }
+  }
+
   return (
     <main className="flex min-h-screen flex-col bg-[#F0F4F8] pb-28 text-[#0D1B2A]">
       <AppHeader />
@@ -417,6 +455,13 @@ export function DashboardClient() {
                 trialCount={trialCount}
               />
             </div>
+
+            {cancellationFollowUps.length > 0 ? (
+              <CancellationFollowUpSection
+                onAction={updateCancellationRequest}
+                subscriptions={cancellationFollowUps}
+              />
+            ) : null}
 
             <form
               className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]"
@@ -659,6 +704,90 @@ function UpcomingPayments({ subscriptions }: { subscriptions: UpcomingPayment[] 
   );
 }
 
+function CancellationFollowUpSection({
+  subscriptions,
+  onAction,
+}: {
+  subscriptions: Subscription[];
+  onAction: (
+    subscription: Subscription,
+    action: "send" | "status",
+    status?: "confirmed_cancelled" | "manual_required",
+  ) => void;
+}) {
+  return (
+    <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-extrabold tracking-tight">Oppfølging av oppsigelser</h2>
+          <p className="mt-1 text-sm text-[#5F6F82]">
+            Oppsigelser som venter på svar, er avvist eller krever manuell handling.
+          </p>
+        </div>
+        <span className="rounded-full bg-[#F0F4F8] px-3 py-1 text-xs font-bold text-[#4A5568]">
+          {subscriptions.length}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3">
+        {subscriptions.map((subscription) => {
+          const request = subscription.cancellationRequest;
+          const sentAt = request?.sentAt ? new Date(request.sentAt) : null;
+          const isStale = Boolean(sentAt && getDaysSince(sentAt) >= 7 && request?.status === "awaiting_confirmation");
+
+          return (
+            <div className="rounded-xl bg-[#F7F9FC] p-4" key={subscription.id}>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="font-extrabold">{subscription.name}</p>
+                  <p className="mt-1 text-sm text-[#5F6F82]">
+                    {getCancellationStatusLabel(request?.status) ?? "Oppsigelse startet"}
+                    {sentAt ? ` · sendt ${formatDateForShortDisplay(sentAt)}` : ""}
+                  </p>
+                  {isStale ? (
+                    <p className="mt-2 rounded-xl bg-[#FFF6E8] px-3 py-2 text-sm font-semibold text-[#8A4B13]">
+                      Oppsigelse sendt for 7 dager siden. Har du fått svar?
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <button
+                    className="rounded-xl border border-[#DBE4EE] bg-white px-4 py-2 text-sm font-bold hover:border-[#C8102E]/50"
+                    onClick={() => onAction(subscription, "status", "confirmed_cancelled")}
+                    type="button"
+                  >
+                    Marker som avsluttet
+                  </button>
+                  <button
+                    className="rounded-xl border border-[#DBE4EE] bg-white px-4 py-2 text-sm font-bold hover:border-[#C8102E]/50"
+                    onClick={() => onAction(subscription, "status", "manual_required")}
+                    type="button"
+                  >
+                    Krever manuell handling
+                  </button>
+                  <button
+                    className="rounded-xl border border-[#DBE4EE] bg-white px-4 py-2 text-sm font-bold hover:border-[#C8102E]/50"
+                    onClick={() => onAction(subscription, "send")}
+                    type="button"
+                  >
+                    Send på nytt
+                  </button>
+                </div>
+              </div>
+              <Link
+                className="mt-3 inline-flex text-sm font-bold text-[#C8102E] hover:underline"
+                href={`/subscriptions/${subscription.id}/cancel`}
+              >
+                Åpne oppsigelse
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function SavingsInsight({
   monthlySavings,
   selectedCount,
@@ -716,6 +845,20 @@ function getUpcomingPayments(subscriptions: Subscription[]): UpcomingPayment[] {
       return Boolean(paymentDate && paymentDate >= today && paymentDate <= thirtyDaysFromNow);
     })
     .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime());
+}
+
+function getCancellationFollowUps(subscriptions: Subscription[]) {
+  return subscriptions.filter((subscription) =>
+    ["awaiting_confirmation", "manual_required", "rejected"].includes(
+      subscription.cancellationRequest?.status ?? "",
+    ),
+  );
+}
+
+function getDaysSince(date: Date) {
+  const today = startOfDay(new Date());
+  const startedAt = startOfDay(date);
+  return Math.floor((today.getTime() - startedAt.getTime()) / 86_400_000);
 }
 
 function getMonthlyEquivalent(subscription: Subscription) {

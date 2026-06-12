@@ -12,6 +12,19 @@ export const cancellationStatuses = [
 
 export type CancellationStatus = (typeof cancellationStatuses)[number];
 
+export const cancellationEventTypes = [
+  "draft_created",
+  "ready",
+  "email_sent",
+  "awaiting_confirmation",
+  "confirmed_cancelled",
+  "rejected",
+  "manual_required",
+  "note_added",
+] as const;
+
+export type CancellationEventType = (typeof cancellationEventTypes)[number];
+
 export function isCancellationStatus(value: string): value is CancellationStatus {
   return cancellationStatuses.includes(value as CancellationStatus);
 }
@@ -65,6 +78,42 @@ ${customerName}
 Denne oppsigelsen er sendt via Aboslutt på vegne av kunden.`;
 
   return { subject, body };
+}
+
+export function getCancellationEventLabel(type: string) {
+  const labels: Record<CancellationEventType, string> = {
+    draft_created: "Utkast opprettet",
+    ready: "Klar til sending",
+    email_sent: "Sendt på vegne av bruker",
+    awaiting_confirmation: "Venter på bekreftelse",
+    confirmed_cancelled: "Bekreftet avsluttet",
+    rejected: "Avvist",
+    manual_required: "Krever manuell handling",
+    note_added: "Notat lagt til",
+  };
+
+  return cancellationEventTypes.includes(type as CancellationEventType)
+    ? labels[type as CancellationEventType]
+    : type;
+}
+
+export async function logCancellationEvent({
+  cancellationRequestId,
+  type,
+  message,
+}: {
+  cancellationRequestId: string;
+  type: CancellationEventType;
+  message: string;
+}) {
+  await prisma.cancellationEvent.create({
+    data: {
+      cancellationRequestId,
+      type,
+      message: message.slice(0, 1000),
+    },
+    select: { id: true },
+  });
 }
 
 export async function logCancellationAudit({
