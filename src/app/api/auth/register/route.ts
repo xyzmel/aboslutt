@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createEmailVerificationToken, sendEmailVerification } from "@/lib/email-verification";
 import { hashPassword, validatePassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 type RegisterResponse = {
   ok: boolean;
@@ -9,14 +10,31 @@ type RegisterResponse = {
   error?: string;
 };
 
+const existingUserSafeMessage = "Hvis e-posten kan registreres, sender vi deg en bekreftelse.";
+
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "auth-register",
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     const payload = (await request.json().catch(() => ({}))) as {
       name?: string;
       email?: string;
       password?: string;
       confirmPassword?: string;
+      website?: string;
     };
+
+    if (payload.website) {
+      return registerError("Ugyldig forespørsel.", 400);
+    }
+
     const name = payload.name?.trim() ?? "";
     const email = payload.email?.trim().toLowerCase() ?? "";
     const password = payload.password ?? "";
@@ -40,7 +58,7 @@ export async function POST(request: Request) {
     });
 
     if (existingUser) {
-      return registerError("Det finnes allerede en bruker med denne e-postadressen.", 409);
+      return NextResponse.json({ ok: true, message: existingUserSafeMessage } satisfies RegisterResponse);
     }
 
     const passwordHash = await hashPassword(password);
@@ -69,13 +87,11 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    const duplicate = /Unique constraint/i.test(String(error));
-    return registerError(
-      duplicate
-        ? "Det finnes allerede en bruker med denne e-postadressen."
-        : "Kunne ikke opprette konto akkurat nå. Prøv igjen senere.",
-      duplicate ? 409 : 500,
-    );
+    if (/Unique constraint/i.test(String(error))) {
+      return NextResponse.json({ ok: true, message: existingUserSafeMessage } satisfies RegisterResponse);
+    }
+
+    return registerError("Kunne ikke opprette konto akkurat nå. Prøv igjen senere.", 500);
   }
 }
 

@@ -23,9 +23,13 @@ model User {
   updatedAt     DateTime       @updatedAt
   accounts      Account[]
   betaRequests  BetaRequest[]
+  adminAuditLogs AdminAuditLog[] @relation("AdminAuditActor")
+  targetedAdminAuditLogs AdminAuditLog[] @relation("AdminAuditTarget")
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens PasswordResetToken[]
   feedback      Feedback[]
+  ignoredImportCandidates IgnoredImportCandidate[]
+  importFeedback ImportFeedback[]
   reminderLogs  ReminderLog[]
   sessions      Session[]
   subscriptions Subscription[]
@@ -63,6 +67,60 @@ model BetaRequest {
   @@index([status])
   @@index([createdAt])
   @@index([reviewedBy])
+}
+
+model AdminAuditLog {
+  id           String   @id @default(cuid())
+  adminUserId  String
+  action       String
+  targetUserId String?
+  metadataJson String?
+  createdAt    DateTime @default(now())
+  adminUser    User     @relation("AdminAuditActor", fields: [adminUserId], references: [id], onDelete: Cascade)
+  targetUser   User?    @relation("AdminAuditTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+  @@index([adminUserId])
+  @@index([targetUserId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model IgnoredImportCandidate {
+  id                String   @id @default(cuid())
+  userId            String
+  sourceProvider    String
+  normalizedName    String?
+  merchantName      String?
+  amount            Int?
+  sourceFingerprint String
+  reason            String?
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, sourceFingerprint])
+  @@index([userId])
+  @@index([sourceProvider])
+  @@index([normalizedName])
+  @@index([createdAt])
+}
+
+model ImportFeedback {
+  id              String   @id @default(cuid())
+  userId          String
+  sourceProvider  String
+  merchantName    String?
+  normalizedName  String?
+  amount          Int?
+  confidenceScore Int?
+  issueType       String
+  comment         String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sourceProvider])
+  @@index([issueType])
+  @@index([createdAt])
 }
 
 model JobRun {

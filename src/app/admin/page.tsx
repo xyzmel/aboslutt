@@ -38,6 +38,12 @@ export default async function AdminPage() {
       gmailConnectedUsers,
       emailRemindersEnabledCount,
       monthlySummaryEnabledCount,
+      confirmedImportCandidatesCount,
+      ignoredImportCandidatesCount,
+      wrongImportReportsCount,
+      lowConfidenceConfirmedCount,
+      importIssueTypeCounts,
+      latestImportFeedback,
       latestBetaRequests,
       latestUsers,
       latestFeedback,
@@ -57,6 +63,37 @@ export default async function AdminPage() {
       }),
       prisma.user.count({ where: { emailRemindersEnabled: true } }),
       prisma.user.count({ where: { monthlySummaryEnabled: true } }),
+      prisma.subscription.count({ where: { source: { in: ["gmail_import", "pasted_email"] } } }),
+      prisma.ignoredImportCandidate.count(),
+      prisma.importFeedback.count(),
+      prisma.subscription.count({
+        where: {
+          source: { in: ["gmail_import", "pasted_email"] },
+          confidence: { lt: 0.5 },
+        },
+      }),
+      prisma.importFeedback.groupBy({
+        by: ["issueType"],
+        _count: { issueType: true },
+        orderBy: { _count: { issueType: "desc" } },
+        take: 5,
+      }),
+      prisma.importFeedback.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          merchantName: true,
+          normalizedName: true,
+          amount: true,
+          confidenceScore: true,
+          issueType: true,
+          comment: true,
+          sourceProvider: true,
+          createdAt: true,
+          user: { select: { email: true, name: true } },
+        },
+      }),
       prisma.betaRequest.findMany({
         orderBy: { createdAt: "desc" },
         take: 10,
@@ -111,6 +148,10 @@ export default async function AdminPage() {
       ["E-post/passord-brukere", emailPasswordUsers],
       ["Gmail tilkoblet", gmailConnectedUsers],
       ["E-postvarsler aktivert", emailRemindersEnabledCount],
+      ["Import-funn lagret", confirmedImportCandidatesCount],
+      ["Import-funn ignorert", ignoredImportCandidatesCount],
+      ["Feilrapporterte funn", wrongImportReportsCount],
+      ["Lav tillit lagret", lowConfidenceConfirmedCount],
       ["Månedsoppsummering aktivert", monthlySummaryEnabledCount],
     ];
 
@@ -180,6 +221,14 @@ export default async function AdminPage() {
                 databaseConnected
                 userCount={totalUsers}
                 subscriptionCount={totalSubscriptions}
+              />
+              <ImportQualityPanel
+                ignoredCount={ignoredImportCandidatesCount}
+                issueTypeCounts={importIssueTypeCounts}
+                latestReports={latestImportFeedback}
+                lowConfidenceConfirmedCount={lowConfidenceConfirmedCount}
+                savedCount={confirmedImportCandidatesCount}
+                wrongReportsCount={wrongImportReportsCount}
               />
               <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
                 <h2 className="text-lg font-extrabold tracking-tight">Beta-forespørsler</h2>
@@ -271,6 +320,9 @@ function AdminHeader({ adminEmail }: { adminEmail: string | null }) {
           <Link className="text-white/60 hover:text-white" href="/admin/jobs">
             Jobber
           </Link>
+          <Link className="text-white/60 hover:text-white" href="/admin/audit">
+            Audit
+          </Link>
           <Link className="text-white/60 hover:text-white" href="/settings">
             Innstillinger
           </Link>
@@ -324,6 +376,108 @@ function AdminHealthPanel({
   );
 }
 
+function ImportQualityPanel({
+  savedCount,
+  ignoredCount,
+  wrongReportsCount,
+  lowConfidenceConfirmedCount,
+  issueTypeCounts,
+  latestReports,
+}: {
+  savedCount: number;
+  ignoredCount: number;
+  wrongReportsCount: number;
+  lowConfidenceConfirmedCount: number;
+  issueTypeCounts: { issueType: string; _count: { issueType: number } }[];
+  latestReports: {
+    id: string;
+    merchantName: string | null;
+    normalizedName: string | null;
+    amount: number | null;
+    confidenceScore: number | null;
+    issueType: string;
+    comment: string | null;
+    sourceProvider: string;
+    createdAt: Date;
+    user: { email: string | null; name: string | null } | null;
+  }[];
+}) {
+  const qualityRows = [
+    ["Lagrede importfunn", savedCount],
+    ["Ignorerte funn", ignoredCount],
+    ["Rapportert feil", wrongReportsCount],
+    ["Lagret med lav tillit", lowConfidenceConfirmedCount],
+  ];
+
+  return (
+    <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+      <h2 className="text-lg font-extrabold tracking-tight">Importkvalitet</h2>
+      <dl className="mt-4 grid gap-3 text-sm">
+        {qualityRows.map(([label, value]) => (
+          <div className="flex items-center justify-between gap-4" key={label}>
+            <dt className="font-semibold text-[#5F6F82]">{label}</dt>
+            <dd className="font-bold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="mt-5">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#5F6F82]">Vanligste feil</p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {issueTypeCounts.length > 0 ? (
+            issueTypeCounts.map((issue) => (
+              <span
+                className="rounded-full bg-[#F7F9FC] px-3 py-1 text-xs font-bold text-[#4A5568]"
+                key={issue.issueType}
+              >
+                {formatImportIssue(issue.issueType)}: {issue._count.issueType}
+              </span>
+            ))
+          ) : (
+            <span className="text-sm text-[#5F6F82]">Ingen feilrapporter ennå.</span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-5">
+        <p className="text-xs font-bold uppercase tracking-wide text-[#5F6F82]">Siste rapporter</p>
+        <div className="mt-3 grid gap-3">
+          {latestReports.length > 0 ? (
+            latestReports.map((report) => (
+              <div className="rounded-xl bg-[#F7F9FC] p-3 text-sm" key={report.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-bold">
+                      {report.merchantName ?? report.normalizedName ?? "Ukjent leverandør"}
+                    </p>
+                    <p className="text-xs text-[#5F6F82]">
+                      {formatImportIssue(report.issueType)} · {report.sourceProvider}
+                    </p>
+                  </div>
+                  <span className="text-xs font-semibold text-[#5F6F82]">
+                    {report.confidenceScore ?? "-"}%
+                  </span>
+                </div>
+                {report.comment ? (
+                  <p className="mt-2 line-clamp-3 text-[#4A5568]">{report.comment}</p>
+                ) : null}
+                <p className="mt-2 text-xs text-[#5F6F82]">
+                  {formatDate(report.createdAt)}
+                  {report.user?.email ? ` · ${report.user.email}` : ""}
+                </p>
+              </div>
+            ))
+          ) : (
+            <p className="rounded-xl bg-[#F7F9FC] p-4 text-sm text-[#5F6F82]">
+              Ingen rapporterte importfunn ennå.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function AdminForbidden() {
   return (
     <main className="min-h-screen bg-[#F0F4F8] px-5 py-10 text-[#0D1B2A]">
@@ -360,6 +514,18 @@ function formatBetaStatus(status: string) {
   };
 
   return labels[status] ?? status;
+}
+
+function formatImportIssue(issueType: string) {
+  const labels: Record<string, string> = {
+    wrong_amount: "Feil beløp",
+    wrong_merchant: "Feil leverandør",
+    not_subscription: "Ikke abonnement",
+    duplicate: "Duplikat",
+    other: "Annet",
+  };
+
+  return labels[issueType] ?? issueType;
 }
 
 function formatProviders(accounts: { provider: string }[], hasPassword: boolean) {

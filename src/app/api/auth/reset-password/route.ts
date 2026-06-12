@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { hashPassword, validatePassword } from "@/lib/password";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "auth-reset-password",
+    limit: 8,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const payload = (await request.json().catch(() => ({}))) as {
     token?: string;
     password?: string;

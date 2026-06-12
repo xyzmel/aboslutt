@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { createPasswordResetToken, sendPasswordResetEmail } from "@/lib/password-reset";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 const safeMessage = "Hvis e-posten finnes, sender vi deg en lenke.";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "auth-forgot-password",
+    limit: 5,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const payload = (await request.json().catch(() => ({}))) as { email?: string };
   const email = payload.email?.trim().toLowerCase() ?? "";
 

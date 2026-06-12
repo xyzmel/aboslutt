@@ -6,6 +6,7 @@ export function FeedbackButton({ page }: { page: string }) {
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [rating, setRating] = useState("5");
+  const [website, setWebsite] = useState("");
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,6 +23,7 @@ export function FeedbackButton({ page }: { page: string }) {
           message,
           rating: Number(rating),
           page,
+          website,
         }),
       });
       const result = (await response.json().catch(() => ({}))) as { message?: string; error?: string };
@@ -33,6 +35,7 @@ export function FeedbackButton({ page }: { page: string }) {
       setStatusMessage(result.message ?? "Takk for tilbakemeldingen.");
       setMessage("");
       setRating("5");
+      setWebsite("");
       setTimeout(() => setIsOpen(false), 900);
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : "Kunne ikke sende tilbakemeldingen.");
@@ -76,6 +79,15 @@ export function FeedbackButton({ page }: { page: string }) {
                 onChange={(event) => setMessage(event.target.value)}
                 required
                 value={message}
+              />
+            </label>
+            <label className="hidden" aria-hidden="true">
+              Nettside
+              <input
+                autoComplete="off"
+                tabIndex={-1}
+                value={website}
+                onChange={(event) => setWebsite(event.target.value)}
               />
             </label>
             <label className="mt-4 block text-sm font-semibold text-[#4A5568]">

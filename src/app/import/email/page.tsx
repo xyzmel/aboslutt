@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { Dispatch, FormEvent, SetStateAction, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import type { EmailSubscriptionCandidate } from "@/lib/email-subscription-parser";
+import type { EnrichedImportCandidate } from "@/lib/import-candidates";
 import { formatNextPaymentDate, normalizeDateInputValue } from "@/lib/subscription-date";
 import type { BillingInterval, SubscriptionCategory } from "@/types/subscription";
 
@@ -24,9 +25,9 @@ const categoryLabels: Record<EmailSubscriptionCandidate["category"], string> = {
 };
 
 const intervalLabels: Record<EmailSubscriptionCandidate["billingInterval"], string> = {
-  monthly: "Månedlig",
-  yearly: "Årlig",
-  trial: "Prøveperiode",
+  monthly: "MÃ¥nedlig",
+  yearly: "Ã…rlig",
+  trial: "PrÃ¸veperiode",
   unknown: "Ukjent intervall",
 };
 
@@ -47,6 +48,7 @@ export default function EmailImportPage() {
   const [editingCandidate, setEditingCandidate] = useState<EmailSubscriptionCandidate | null>(null);
   const [candidateDraft, setCandidateDraft] = useState<CandidateDraft | null>(null);
   const [isSavingCandidate, setIsSavingCandidate] = useState(false);
+  const [reportingCandidate, setReportingCandidate] = useState<EmailSubscriptionCandidate | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -80,9 +82,9 @@ export default function EmailImportPage() {
     () => candidates.filter((candidate) => !hiddenCandidateKeys.includes(getCandidateKey(candidate))),
     [candidates, hiddenCandidateKeys],
   );
-  const likelyCandidates = visibleCandidates.filter((candidate) => candidate.confidence >= 0.75);
+  const likelyCandidates = visibleCandidates.filter((candidate) => getConfidenceScore(candidate) >= 75);
   const possibleCandidates = visibleCandidates.filter(
-    (candidate) => candidate.confidence >= 0.5 && candidate.confidence < 0.75,
+    (candidate) => getConfidenceScore(candidate) >= 50 && getConfidenceScore(candidate) < 75,
   );
 
   async function parseEmail(event: FormEvent<HTMLFormElement>) {
@@ -106,7 +108,7 @@ export default function EmailImportPage() {
 
       if (result.candidates.length === 0) {
         setErrorMessage(
-          "Fant ingen sikre abonnementer. Prøv å lime inn en kvittering eller legg til manuelt.",
+          "Fant ingen sikre abonnementer. PrÃ¸v Ã¥ lime inn en kvittering eller legg til manuelt.",
         );
       }
     } catch (error) {
@@ -134,7 +136,7 @@ export default function EmailImportPage() {
 
       if (result.candidates.length === 0) {
         setErrorMessage(
-          "Fant ingen sikre abonnementer. Prøv å lime inn en kvittering eller legg til manuelt.",
+          "Fant ingen sikre abonnementer. PrÃ¸v Ã¥ lime inn en kvittering eller legg til manuelt.",
         );
       }
     } catch (error) {
@@ -186,6 +188,7 @@ export default function EmailImportPage() {
               : candidateDraft.billingInterval === "yearly"
                 ? "yearly"
                 : "active",
+          source: getCandidateSource(editingCandidate),
         }),
       });
       const result = await response.json();
@@ -213,8 +216,13 @@ export default function EmailImportPage() {
     setHiddenCandidateKeys([]);
   }
 
-  function ignoreCandidate(candidate: EmailSubscriptionCandidate) {
+  async function ignoreCandidate(candidate: EmailSubscriptionCandidate) {
     setHiddenCandidateKeys((currentKeys) => [...currentKeys, getCandidateKey(candidate)]);
+    await fetch("/api/import/candidates/ignore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(candidate),
+    }).catch(() => null);
   }
 
   return (
@@ -233,7 +241,7 @@ export default function EmailImportPage() {
       <section className="mx-auto max-w-4xl px-5 py-8">
         {status === "unauthenticated" ? (
           <div className="mb-6 rounded-2xl border border-[#F3C3CC] bg-[#F5E6E9] p-5 text-sm text-[#C8102E]">
-            <p className="font-bold">Du må logge inn for å importere abonnementer.</p>
+            <p className="font-bold">Du mÃ¥ logge inn for Ã¥ importere abonnementer.</p>
             <button
               className="mt-4 rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
               onClick={() => signIn(undefined, { callbackUrl: "/import/email" })}
@@ -250,7 +258,7 @@ export default function EmailImportPage() {
         </h1>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[#5F6F82]">
           Skann Gmail med read-only tilgang, eller lim inn tekst fra en kvittering.
-          Aboslutt lagrer ikke rå e-postinnhold, bare abonnementet du bekrefter.
+          Aboslutt lagrer ikke rÃ¥ e-postinnhold, bare abonnementet du bekrefter.
         </p>
 
         <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
@@ -258,7 +266,7 @@ export default function EmailImportPage() {
             <div>
               <h2 className="text-lg font-extrabold tracking-tight">Gmail-skanning</h2>
               <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
-                Skann inntil 100 sannsynlige kvitteringer fra de siste 24 månedene.
+                Skann inntil 100 sannsynlige kvitteringer fra de siste 24 mÃ¥nedene.
                 Kun Gmail read-only brukes.
               </p>
               <p className="mt-1 text-xs font-semibold text-[#5F6F82]">
@@ -266,11 +274,11 @@ export default function EmailImportPage() {
                   ? `Innlogget som ${session.user.email}. Gmail: ${
                       gmailScopeConnected ? "koblet til" : "ikke koblet til"
                     }`
-                  : "Logg inn med Google for å bruke Gmail-skanning."}
+                  : "Logg inn med Google for Ã¥ bruke Gmail-skanning."}
               </p>
               {gmailConnected && !gmailScopeConnected ? (
                 <p className="mt-2 text-xs font-semibold text-[#C8102E]">
-                  Gmail read-only mangler. Koble til Google på nytt.
+                  Gmail read-only mangler. Koble til Google pÃ¥ nytt.
                 </p>
               ) : null}
               {!gmailScanAvailable ? (
@@ -279,7 +287,7 @@ export default function EmailImportPage() {
                 </p>
               ) : null}
               <p className="mt-3 text-xs font-semibold text-[#C8102E]">
-                Forslag kan inneholde feil. Bekreft alltid kandidaten før den lagres.
+                Forslag kan inneholde feil. Bekreft alltid kandidaten fÃ¸r den lagres.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:w-44">
@@ -334,7 +342,7 @@ export default function EmailImportPage() {
             className="mt-2 min-h-56 w-full rounded-xl border border-[#DBE4EE] px-4 py-3 text-sm text-[#0D1B2A] outline-none transition focus:border-[#0D1B2A]"
             id="emailText"
             onChange={(event) => setEmailText(event.target.value)}
-            placeholder="Eksempel: Kvittering fra Spotify. Beløp kr 129. Neste trekk 3. jul."
+            placeholder="Eksempel: Kvittering fra Spotify. BelÃ¸p kr 129. Neste trekk 3. jul."
             required
             value={emailText}
           />
@@ -363,6 +371,7 @@ export default function EmailImportPage() {
           <CandidateGroup
             candidates={likelyCandidates}
             onIgnore={ignoreCandidate}
+            onReport={(candidate) => setReportingCandidate(candidate)}
             onSave={startCandidateConfirmation}
             title="Sannsynlige abonnementer"
           />
@@ -372,6 +381,7 @@ export default function EmailImportPage() {
           <CandidateGroup
             candidates={possibleCandidates}
             onIgnore={ignoreCandidate}
+            onReport={(candidate) => setReportingCandidate(candidate)}
             onSave={startCandidateConfirmation}
             title="Mulige funn"
           />
@@ -390,6 +400,16 @@ export default function EmailImportPage() {
             setDraft={setCandidateDraft}
           />
         ) : null}
+        {reportingCandidate ? (
+          <ReportWrongModal
+            candidate={reportingCandidate}
+            onClose={() => setReportingCandidate(null)}
+            onReported={() => {
+              ignoreCandidate(reportingCandidate);
+              setReportingCandidate(null);
+            }}
+          />
+        ) : null}
       </section>
     </main>
   );
@@ -400,11 +420,13 @@ function CandidateGroup({
   candidates,
   onSave,
   onIgnore,
+  onReport,
 }: {
   title: string;
   candidates: EmailSubscriptionCandidate[];
   onSave: (candidate: EmailSubscriptionCandidate) => void;
-  onIgnore: (candidate: EmailSubscriptionCandidate) => void;
+  onIgnore: (candidate: EmailSubscriptionCandidate) => void | Promise<void>;
+  onReport: (candidate: EmailSubscriptionCandidate) => void;
 }) {
   return (
     <section className="mt-6">
@@ -421,18 +443,18 @@ function CandidateGroup({
                   <h3 className="text-xl font-extrabold tracking-tight">
                     {candidate.merchantName}
                   </h3>
-                  <span className="rounded-full bg-[#F0F4F8] px-3 py-1 text-xs font-bold text-[#4A5568]">
-                    {candidate.confidenceLabel} · {Math.round(candidate.confidence * 100)}%
+                  <span className="rounded-full bg-[#EAF7EF] px-3 py-1 text-xs font-bold text-emerald-700">
+                    {getConfidenceLabel(candidate)} · {getConfidenceScore(candidate)}%
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-[#5F6F82]">
-                  {candidate.amount} {candidate.currency} · {categoryLabels[candidate.category]} ·{" "}
+                  {candidate.amount} {candidate.currency} Â· {categoryLabels[candidate.category]} Â·{" "}
                   {intervalLabels[candidate.billingInterval]}
                 </p>
                 <p className="mt-1 text-sm text-[#5F6F82]">
                   Neste trekk: {formatNextPaymentDate(candidate.nextPayment)}
                 </p>
-                <ReasonList items={candidate.reasons} title="Hvorfor" />
+                <ReasonList items={candidate.reasons} title="Hvorfor fant vi dette?" />
                 {candidate.warnings.length > 0 ? (
                   <ReasonList items={candidate.warnings} title="Varsler" warning />
                 ) : null}
@@ -451,6 +473,13 @@ function CandidateGroup({
                   type="button"
                 >
                   Ignorer
+                </button>
+                <button
+                  className="rounded-xl border border-[#F3C3CC] px-5 py-3 text-sm font-bold text-[#C8102E] hover:bg-[#F5E6E9]"
+                  onClick={() => onReport(candidate)}
+                  type="button"
+                >
+                  Rapporter feil funn
                 </button>
               </div>
             </div>
@@ -492,9 +521,9 @@ function CandidateConfirmationModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-extrabold tracking-tight">Sjekk før du lagrer</h2>
+            <h2 className="text-xl font-extrabold tracking-tight">Sjekk fÃ¸r du lagrer</h2>
             <p className="mt-1 text-sm text-[#5F6F82]">
-              Gmail-funn kan være feil. Rett opp navn, pris og intervall før abonnementet lagres.
+              Gmail-funn kan vÃ¦re feil. Rett opp navn, pris og intervall fÃ¸r abonnementet lagres.
             </p>
           </div>
           <button
@@ -508,7 +537,7 @@ function CandidateConfirmationModal({
 
         {showSuspiciousAmountWarning ? (
           <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
-            Beløpet virker høyt. Sjekk før du lagrer.
+            BelÃ¸pet virker hÃ¸yt. Sjekk fÃ¸r du lagrer.
           </div>
         ) : null}
 
@@ -556,8 +585,8 @@ function CandidateConfirmationModal({
               }
               value={draft.billingInterval}
             >
-              <option value="monthly">Månedlig</option>
-              <option value="yearly">Årlig</option>
+              <option value="monthly">MÃ¥nedlig</option>
+              <option value="yearly">Ã…rlig</option>
               <option value="unknown">Ukjent</option>
             </select>
           </label>
@@ -576,7 +605,7 @@ function CandidateConfirmationModal({
         <div className="mt-5 rounded-xl bg-[#F7F9FC] p-4 text-sm text-[#5F6F82]">
           <p className="font-bold text-[#0D1B2A]">Opprinnelig forslag</p>
           <p className="mt-1">
-            {candidate.merchantName} · {candidate.amount} {candidate.currency} ·{" "}
+            {candidate.merchantName} Â· {candidate.amount} {candidate.currency} Â·{" "}
             {candidate.confidenceLabel} ({Math.round(candidate.confidence * 100)}%)
           </p>
         </div>
@@ -625,6 +654,127 @@ function ReasonList({
   );
 }
 
+function ReportWrongModal({
+  candidate,
+  onClose,
+  onReported,
+}: {
+  candidate: EmailSubscriptionCandidate;
+  onClose: () => void;
+  onReported: () => void;
+}) {
+  const [issueType, setIssueType] = useState("not_subscription");
+  const [comment, setComment] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function submitReport(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch("/api/import/candidates/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...candidate, issueType, comment }),
+      });
+      const result = (await response.json().catch(() => ({}))) as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(result.message ?? "Kunne ikke rapportere funnet.");
+      }
+
+      onReported();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunne ikke rapportere funnet.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-[#0D1B2A]/50 p-4 sm:items-center sm:justify-center">
+      <form className="w-full rounded-2xl bg-white p-5 shadow-2xl sm:max-w-md" onSubmit={submitReport}>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-extrabold tracking-tight">Rapporter feil funn</h2>
+            <p className="mt-1 text-sm text-[#5F6F82]">{candidate.merchantName}</p>
+          </div>
+          <button className="text-sm font-bold text-[#5F6F82]" onClick={onClose} type="button">
+            Lukk
+          </button>
+        </div>
+        <label className="mt-5 block text-sm font-semibold text-[#4A5568]">
+          Hva var feil?
+          <select
+            className="mt-2 w-full rounded-xl border border-[#DBE4EE] bg-white px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+            onChange={(event) => setIssueType(event.target.value)}
+            value={issueType}
+          >
+            <option value="wrong_amount">Feil beløp</option>
+            <option value="wrong_merchant">Feil leverandør</option>
+            <option value="not_subscription">Ikke et abonnement</option>
+            <option value="duplicate">Duplikat</option>
+            <option value="other">Annet</option>
+          </select>
+        </label>
+        <label className="mt-4 block text-sm font-semibold text-[#4A5568]">
+          Kommentar
+          <textarea
+            className="mt-2 min-h-24 w-full rounded-xl border border-[#DBE4EE] px-3 py-2.5 text-sm text-[#0D1B2A] outline-none focus:border-[#0D1B2A]"
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Valgfritt"
+            value={comment}
+          />
+        </label>
+        <button
+          className="mt-5 w-full rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27] disabled:opacity-50"
+          disabled={isSubmitting}
+          type="submit"
+        >
+          {isSubmitting ? "Sender..." : "Rapporter og ignorer"}
+        </button>
+        {message ? <p className="mt-3 text-sm font-semibold text-[#C8102E]">{message}</p> : null}
+      </form>
+    </div>
+  );
+}
+
 function getCandidateKey(candidate: EmailSubscriptionCandidate) {
-  return `${candidate.merchantName}-${candidate.amount}-${candidate.confidence}`;
+  return (
+    (candidate as unknown as Partial<EnrichedImportCandidate>).sourceFingerprint ||
+    `${candidate.merchantName}-${candidate.amount}-${candidate.confidence}`
+  );
+}
+
+function getConfidenceScore(candidate: EmailSubscriptionCandidate) {
+  return (
+    (candidate as unknown as Partial<EnrichedImportCandidate>).confidenceScore ??
+    Math.round(candidate.confidence * 100)
+  );
+}
+
+function getConfidenceLabel(candidate: EmailSubscriptionCandidate) {
+  const label = (candidate as unknown as Partial<EnrichedImportCandidate>).confidenceLabel;
+
+  if (label === "high") {
+    return "Høy tillit";
+  }
+
+  if (label === "medium") {
+    return "Middels tillit";
+  }
+
+  if (label === "low") {
+    return "Lav tillit";
+  }
+
+  return "Middels tillit";
+}
+
+function getCandidateSource(candidate: EmailSubscriptionCandidate) {
+  const sourceProvider = (candidate as unknown as Partial<EnrichedImportCandidate>).sourceProvider;
+
+  return sourceProvider === "pasted_email" ? "pasted_email" : "gmail_import";
 }

@@ -1,8 +1,18 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "feedback",
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const payload = await request.json().catch(() => null);
 
   if (!payload || typeof payload !== "object") {
@@ -15,6 +25,14 @@ export async function POST(request: Request) {
   const message = typeof payload.message === "string" ? payload.message.trim() : "";
   const email = typeof payload.email === "string" ? payload.email.trim().toLowerCase() : null;
   const rating = payload.rating === undefined || payload.rating === null ? null : Number(payload.rating);
+  const website = typeof payload.website === "string" ? payload.website.trim() : "";
+
+  if (website) {
+    return NextResponse.json(
+      { ok: false, error: "INVALID_REQUEST", message: "Ugyldig forespørsel." },
+      { status: 400 },
+    );
+  }
 
   if (message.length < 3 || message.length > 2000) {
     return NextResponse.json(

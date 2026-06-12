@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
+import { logAdminAudit } from "@/lib/admin-audit";
 import { AdminForbiddenError, isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { logger } from "@/lib/logger";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 import { sendTransactionalEmail } from "@/lib/transactional-email";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "admin-job-test-email",
+    limit: 10,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
@@ -51,6 +63,11 @@ export async function POST() {
       );
     }
 
+    await logAdminAudit({
+      adminUserId: currentUser.id,
+      action: "job.test_email_triggered",
+    });
+
     return NextResponse.json({ ok: true, message: `Test-e-post er sendt til ${currentUser.email}.` });
   } catch (error) {
     logAdminJobError("admin/jobs/test-email", error, currentUser.id);
@@ -64,5 +81,5 @@ export async function POST() {
 function logAdminJobError(route: string, error: unknown, userId?: string) {
   const safeError =
     error instanceof Error ? { name: error.name, message: error.message } : { message: "Ukjent feil" };
-  console.error("[admin-job]", { route, userId, ...safeError });
+  logger.error("[admin-job]", { route, userId, ...safeError });
 }

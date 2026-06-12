@@ -1,14 +1,25 @@
 import { NextResponse } from "next/server";
+import { logAdminAudit } from "@/lib/admin-audit";
 import { AdminForbiddenError, isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { sendBetaAccessApprovedEmail } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 type AdminBetaRequestRouteProps = {
   params: Promise<{ id: string }>;
 };
 
 export async function PATCH(request: Request, { params }: AdminBetaRequestRouteProps) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "admin-beta-request",
+    limit: 30,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const adminResponse = await requireAdminResponse();
 
   if (adminResponse) {
@@ -79,6 +90,15 @@ export async function PATCH(request: Request, { params }: AdminBetaRequestRouteP
       }
     }
 
+    if (adminUser) {
+      await logAdminAudit({
+        adminUserId: adminUser.id,
+        action: "beta_request.approved",
+        targetUserId: matchingUser?.id ?? null,
+        metadata: { betaRequestId: id, emailMatchedUser: Boolean(matchingUser), emailWarning },
+      });
+    }
+
     return NextResponse.json({
       ok: true,
       message: emailWarning ?? "Beta-tilgang er godkjent. Hvis brukeren finnes, er planen satt til beta.",
@@ -94,6 +114,14 @@ export async function PATCH(request: Request, { params }: AdminBetaRequestRouteP
       reviewedBy: adminUser?.id ?? null,
     },
   });
+
+  if (adminUser) {
+    await logAdminAudit({
+      adminUserId: adminUser.id,
+      action: "beta_request.rejected",
+      metadata: { betaRequestId: id },
+    });
+  }
 
   return NextResponse.json({ ok: true, message: "Beta-forespørselen er avvist." });
 }

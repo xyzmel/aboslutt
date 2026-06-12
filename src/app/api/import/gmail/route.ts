@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/current-user";
 import {
-  dedupeSubscriptionCandidates,
   normalizeMerchantKey,
   parseEmailSubscriptionCandidates,
 } from "@/lib/email-subscription-parser";
 import { getValidGoogleAccessToken, GoogleTokenError } from "@/lib/google-tokens";
+import { dedupeImportCandidates, enrichImportCandidate } from "@/lib/import-candidates";
 import { canUseGmailScan } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -48,7 +49,16 @@ class GmailImportError extends Error {
   }
 }
 
-export async function POST() {
+export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "import-gmail",
+    limit: 5,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   try {
     debugLog("start");
     const currentUser = await getCurrentUser();
@@ -108,16 +118,26 @@ export async function POST() {
         subscription.normalizedName ?? normalizeMerchantKey(subscription.name),
       ),
     );
-    const candidates = dedupeSubscriptionCandidates(parsed.candidates)
-      .filter((candidate) => candidate.confidence >= 0.5)
+    const ignoredCandidates = await prisma.ignoredImportCandidate.findMany({
+      where: { userId: currentUser.id },
+      select: { sourceFingerprint: true },
+    });
+    const ignoredFingerprints = new Set(ignoredCandidates.map((candidate) => candidate.sourceFingerprint));
+    const candidates = dedupeImportCandidates(
+      parsed.candidates.map((candidate) => enrichImportCandidate(candidate, "gmail")),
+    )
+      .filter((candidate) => candidate.confidenceScore >= 50)
       .filter((candidate) => !existingMerchantKeys.has(normalizeMerchantKey(candidate.merchantName)));
+    const visibleCandidates = candidates.filter(
+      (candidate) => !ignoredFingerprints.has(candidate.sourceFingerprint),
+    );
 
     return NextResponse.json({
       ok: true,
       scannedMessages: messageIds.length,
       fetchedMessages: fetchedMessages.messageTexts.length,
       skippedMessages: fetchedMessages.warningCount + parsed.warningCount,
-      candidates,
+      candidates: visibleCandidates,
     });
   } catch (error) {
     if (error instanceof GoogleTokenError) {

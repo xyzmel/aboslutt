@@ -134,6 +134,24 @@ Etter migrasjonen `20260612133000_add_beta_requests_feedback_review` må produks
 npm run prisma:deploy
 ```
 
+## Security And Abuse Protection
+
+Aboslutt har enkel rate limiting i `src/lib/rate-limit.ts` for offentlige skrive-endepunkter, import-endepunkter og adminhandlinger. Uten Redis/KV bruker dette en in-memory store. Det er produksjonssikkert som et best-effort vern, men i serverless kan minnet nullstilles eller være forskjellig per instans. Før større trafikk bør dette flyttes til Upstash Redis, Vercel KV eller tilsvarende delt rate limit-store.
+
+Rate limit-feil returnerer:
+
+```json
+{
+  "ok": false,
+  "error": "RATE_LIMITED",
+  "message": "For mange forsøk. Prøv igjen senere."
+}
+```
+
+Adminhandlinger logges i `AdminAuditLog` og kan leses på `/admin/audit`. Audit-loggen skal bare inneholde trygge metadata som handling, admin, målbruker og tellinger. Secrets, OAuth tokens, passordhash, `DATABASE_URL` og rå Gmail-/e-postinnhold skal aldri logges.
+
+`src/lib/logger.ts` saniterer metadata før logging. Gmail-import skal fortsatt aldri logge rå e-postinnhold eller OAuth tokens.
+
 ## Beta Registration
 
 `/register` bruker nå e-post og passord for beta-registrering. Passord lagres kun som bcrypt-hash i `User.passwordHash`. Brukeren må bekrefte e-postadressen via `/verify-email?token=...` før innlogging med passord fungerer.
@@ -567,6 +585,19 @@ SQLite var kun for tidlig lokal MVP-testing. Hovedskjemaet bruker nå Postgres. 
 npm run lint
 npm run build
 ```
+
+## Gmail-Importkvalitet
+
+Gmail- og e-postimport bruker heuristisk scoring før brukeren får se forslagene. Hvert funn får:
+
+- tillit: høy, middels eller lav
+- forklaringer på hvorfor funnet ble foreslått
+- varsler ved mistenkelige verdier, for eksempel manglende beløp eller høy månedlig pris
+- normalisert leverandørnavn for å redusere duplikater
+
+Brukeren må alltid bekrefte og kan redigere navn, beløp, kategori, intervall og neste trekk før noe lagres. Feil forslag kan ignoreres eller rapporteres som feil funn. Ignorerte kandidater lagres som et trygt fingerprint per bruker, slik at samme kandidat ikke dukker opp igjen. Rå Gmail-/e-postinnhold lagres ikke.
+
+Adminportalen viser trygg importkvalitet: antall lagrede importfunn, ignorerte funn, feilrapporter og siste rapporterte importfeil. Den viser ikke tokens, hemmeligheter eller rå e-postinnhold.
 
 ## TODO
 

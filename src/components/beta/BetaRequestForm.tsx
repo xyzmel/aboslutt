@@ -6,6 +6,7 @@ const defaultForm = {
   name: "",
   email: "",
   message: "",
+  website: "",
 };
 
 export function BetaRequestForm() {
@@ -58,6 +59,15 @@ export function BetaRequestForm() {
         type="email"
         value={form.email}
       />
+      <label className="hidden" aria-hidden="true">
+        Nettside
+        <input
+          autoComplete="off"
+          tabIndex={-1}
+          value={form.website}
+          onChange={(event) => setForm((current) => ({ ...current, website: event.target.value }))}
+        />
+      </label>
       <label className="text-sm font-semibold text-[#4A5568]">
         Hvorfor vil du teste Aboslutt?
         <textarea

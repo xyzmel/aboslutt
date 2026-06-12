@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
+import { logAdminAudit } from "@/lib/admin-audit";
 import { AdminForbiddenError, isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { logger } from "@/lib/logger";
 import { runMonthlySummary } from "@/lib/notification-jobs";
+import { rateLimitResponseIfNeeded } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
+  const rateLimitResponse = rateLimitResponseIfNeeded(request, {
+    keyPrefix: "admin-job-monthly-summary",
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  });
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
@@ -27,6 +39,11 @@ export async function POST(request: Request) {
       dryRun,
       triggeredByEmail: currentUser.email,
     });
+    await logAdminAudit({
+      adminUserId: currentUser.id,
+      action: "job.monthly_summary_triggered",
+      metadata: { dryRun, emailsSent: result.emailsSent },
+    });
     return NextResponse.json(result);
   } catch (error) {
     logAdminJobError("admin/jobs/monthly-summary", error, currentUser.id);
@@ -40,5 +57,5 @@ export async function POST(request: Request) {
 function logAdminJobError(route: string, error: unknown, userId?: string) {
   const safeError =
     error instanceof Error ? { name: error.name, message: error.message } : { message: "Ukjent feil" };
-  console.error("[admin-job]", { route, userId, ...safeError });
+  logger.error("[admin-job]", { route, userId, ...safeError });
 }

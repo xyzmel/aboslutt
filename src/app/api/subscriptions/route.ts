@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
+import { logger } from "@/lib/logger";
 import { canAddManualSubscription, getManualSubscriptionLimit } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import {
@@ -144,6 +145,16 @@ export async function POST(request: Request) {
     },
     select: subscriptionSelect,
   });
+
+  if (source === "gmail_import" || source === "pasted_email") {
+    logger.info("import_candidate_confirmed", {
+      userId: currentUser.id,
+      subscriptionId: subscription.id,
+      source,
+      normalizedName: subscription.normalizedName,
+      confidence,
+    });
+  }
 
   return NextResponse.json(subscription, { status: 201 });
 }
