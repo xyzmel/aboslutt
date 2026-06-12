@@ -6,6 +6,7 @@ import {
   parseEmailSubscriptionCandidates,
 } from "@/lib/email-subscription-parser";
 import { getValidGoogleAccessToken, GoogleTokenError } from "@/lib/google-tokens";
+import { canUseGmailScan } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
@@ -37,7 +38,8 @@ class GmailImportError extends Error {
       | "GMAIL_TOKEN_EXPIRED"
       | "GMAIL_RATE_LIMITED"
       | "GMAIL_UPSTREAM_ERROR"
-      | "GMAIL_INTERNAL_ERROR",
+      | "GMAIL_INTERNAL_ERROR"
+      | "PLAN_REQUIRED",
     message: string,
     public status: number,
   ) {
@@ -53,6 +55,14 @@ export async function POST() {
 
     if (!currentUser) {
       throw new GmailImportError("UNAUTHORIZED", "Du må være logget inn.", 401);
+    }
+
+    if (!canUseGmailScan(currentUser)) {
+      throw new GmailImportError(
+        "PLAN_REQUIRED",
+        "Gmail-skanning er tilgjengelig for beta-, premium- og admin-brukere.",
+        403,
+      );
     }
 
     const account = await prisma.account.findFirst({

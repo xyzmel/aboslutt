@@ -14,8 +14,10 @@ type SettingsClientProps = {
   vippsConfigured: boolean;
   isAdmin: boolean;
   emailRemindersEnabled: boolean;
+  emailRemindersAvailable: boolean;
   reminderDaysBefore: number;
   monthlySummaryEnabled: boolean;
+  monthlySummaryAvailable: boolean;
 };
 
 export function SettingsClient({
@@ -28,8 +30,10 @@ export function SettingsClient({
   vippsConfigured,
   isAdmin,
   emailRemindersEnabled,
+  emailRemindersAvailable,
   reminderDaysBefore,
   monthlySummaryEnabled,
+  monthlySummaryAvailable,
 }: SettingsClientProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
@@ -233,6 +237,11 @@ export function SettingsClient({
           <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
             Få e-post før kommende abonnementstrekk og en valgfri månedlig oversikt.
           </p>
+          {!emailRemindersAvailable || !monthlySummaryAvailable ? (
+            <p className="mt-3 rounded-xl bg-[#FFF6E8] px-4 py-3 text-sm font-semibold text-[#8A4B13]">
+              Varsler og månedlig oppsummering er tilgjengelig for beta-, premium- og admin-brukere.
+            </p>
+          ) : null}
           <div className="mt-5 grid gap-4">
             <label className="flex items-start justify-between gap-4 rounded-xl bg-[#F7F9FC] p-4 text-sm">
               <span>
@@ -246,7 +255,7 @@ export function SettingsClient({
               <input
                 checked={notificationForm.emailRemindersEnabled}
                 className="mt-1 h-5 w-5 accent-[#C8102E]"
-                disabled={isWorking}
+                disabled={isWorking || !emailRemindersAvailable}
                 onChange={(event) =>
                   updateNotificationForm({ emailRemindersEnabled: event.target.checked })
                 }
@@ -282,7 +291,7 @@ export function SettingsClient({
               <input
                 checked={notificationForm.monthlySummaryEnabled}
                 className="mt-1 h-5 w-5 accent-[#C8102E]"
-                disabled={isWorking}
+                disabled={isWorking || !monthlySummaryAvailable}
                 onChange={(event) =>
                   updateNotificationForm({ monthlySummaryEnabled: event.target.checked })
                 }

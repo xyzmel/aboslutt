@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
 import { normalizeMerchantKey, normalizeMerchantName } from "@/lib/email-subscription-parser";
+import { canAddManualSubscription, getManualSubscriptionLimit } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import {
   isValidSubscriptionDateInput,
@@ -90,6 +91,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "Ugyldig dato.", message: "Neste trekk må være tom eller en gyldig dato." },
       { status: 400 },
+    );
+  }
+
+  const existingSubscriptionCount = await prisma.subscription.count({
+    where: { userId: currentUser.id },
+  });
+  if (!canAddManualSubscription(currentUser, existingSubscriptionCount)) {
+    const limit = getManualSubscriptionLimit(currentUser);
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "PLAN_LIMIT_REACHED",
+        message: `Gratis-planen har plass til ${limit} abonnementer. Slett et abonnement eller be om beta-tilgang for å legge til flere.`,
+      },
+      { status: 403 },
     );
   }
 

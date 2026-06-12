@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { canUseEmailReminders, canUseMonthlySummary } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 const allowedReminderDays = [1, 3, 7];
@@ -33,6 +34,16 @@ export async function PATCH(request: Request) {
         { status: 400 },
       );
     }
+    if (payload.emailRemindersEnabled && !canUseEmailReminders(currentUser)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "PLAN_REQUIRED",
+          message: "E-postvarsler er tilgjengelig for beta-, premium- og admin-brukere.",
+        },
+        { status: 403 },
+      );
+    }
     data.emailRemindersEnabled = payload.emailRemindersEnabled;
   }
 
@@ -41,6 +52,16 @@ export async function PATCH(request: Request) {
       return NextResponse.json(
         { ok: false, error: "INVALID_SUMMARY_SETTING", message: "Ugyldig oppsummeringsvalg." },
         { status: 400 },
+      );
+    }
+    if (payload.monthlySummaryEnabled && !canUseMonthlySummary(currentUser)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "PLAN_REQUIRED",
+          message: "Månedlig oppsummering er tilgjengelig for beta-, premium- og admin-brukere.",
+        },
+        { status: 403 },
       );
     }
     data.monthlySummaryEnabled = payload.monthlySummaryEnabled;

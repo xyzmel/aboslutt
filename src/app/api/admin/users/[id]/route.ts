@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { AdminForbiddenError, isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { isValidPlan } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
-
-const allowedPlans = ["free", "beta", "premium", "admin"];
 
 type AdminUserRouteProps = {
   params: Promise<{ id: string }>;
@@ -39,7 +38,7 @@ export async function PATCH(request: Request, { params }: AdminUserRouteProps) {
   }
 
   if ("plan" in payload) {
-    if (typeof payload.plan !== "string" || !allowedPlans.includes(payload.plan)) {
+    if (typeof payload.plan !== "string" || !isValidPlan(payload.plan)) {
       return NextResponse.json(
         { ok: false, error: "INVALID_PLAN", message: "Ugyldig plan." },
         { status: 400 },

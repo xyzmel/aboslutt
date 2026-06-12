@@ -4,6 +4,7 @@ import { SettingsClient } from "@/components/settings/SettingsClient";
 import { isAdminUser } from "@/lib/admin";
 import { isVippsConfigured } from "@/lib/auth-config-status";
 import { getCurrentAppUser } from "@/lib/current-user";
+import { canUseEmailReminders, canUseMonthlySummary } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 const gmailReadonlyScope = "https://www.googleapis.com/auth/gmail.readonly";
@@ -74,6 +75,13 @@ export default async function SettingsPage() {
   const googleReconnectRequired = Boolean(
     googleAccount && gmailScopeConnected && !googleAccount.refresh_token,
   );
+  const emailRemindersAvailable = canUseEmailReminders(currentUser);
+  const monthlySummaryAvailable = canUseMonthlySummary(currentUser);
+  notificationPreferences = {
+    ...notificationPreferences,
+    emailRemindersEnabled: emailRemindersAvailable && notificationPreferences.emailRemindersEnabled,
+    monthlySummaryEnabled: monthlySummaryAvailable && notificationPreferences.monthlySummaryEnabled,
+  };
 
   return (
     <main className="min-h-screen bg-[#F0F4F8] text-[#0D1B2A]">
@@ -91,10 +99,12 @@ export default async function SettingsPage() {
       <SettingsClient
         email={currentUser.email}
         emailRemindersEnabled={notificationPreferences.emailRemindersEnabled}
+        emailRemindersAvailable={emailRemindersAvailable}
         gmailScopeConnected={gmailScopeConnected}
         googleConnected={gmailScopeConnected && !googleReconnectRequired}
         googleReconnectRequired={googleReconnectRequired}
         isAdmin={isAdminUser(currentUser)}
+        monthlySummaryAvailable={monthlySummaryAvailable}
         monthlySummaryEnabled={notificationPreferences.monthlySummaryEnabled}
         name={currentUser.name}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}

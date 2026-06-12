@@ -11,6 +11,7 @@ const currentUserSelect = {
   emailVerified: true,
   passwordHash: true,
   image: true,
+  plan: true,
   createdAt: true,
   updatedAt: true,
 } as const;

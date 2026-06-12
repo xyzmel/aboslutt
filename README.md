@@ -95,7 +95,10 @@ Manuell abonnementssporing er gratis å starte med. Automatisk skanning, varsler
 
 - `Gratis`: manuell abonnementssporing, opptil 10 abonnementer, månedlig/årlig oversikt og grunnleggende dashboard.
 - `Beta`: alt i Gratis, Gmail-skanning, e-postpåminnelser og månedlig oppsummering. Gratis for utvalgte tidlige brukere.
-- `Premium`: kommer senere med ubegrensede abonnementer, automatisering, innsikt og fremtidige bank/Open Banking-funksjoner.
+- `Premium`: samme funksjonsnivå som Beta akkurat nå, med ubegrensede abonnementer, Gmail-skanning, varsler og månedlig oppsummering. Betaling er ikke implementert ennå.
+- `Admin`: alt aktivert for intern administrasjon og testing.
+
+Planlogikken ligger i `src/lib/plans.ts`. Backend håndhever at Gratis-brukere kan legge til maks 10 abonnementer, men de kan fortsatt se, redigere og slette eksisterende abonnementer. Gratis-brukere får ikke bruke Gmail-skanning, e-postvarsler eller månedlig oppsummering. Admin kan endre brukerplan fra `/admin/users/[id]`.
 
 ## Beta Registration
 
@@ -304,6 +307,8 @@ Aboslutt kan sende e-postvarsler før kommende abonnementstrekk. Brukeren styrer
 - `Send månedlig oppsummering`
 
 Påminnelser bruker bare lagrede abonnementer og `nextPayment`. Rå Gmail- eller e-postinnhold sendes eller lagres ikke.
+
+Varsler og månedlig oppsummering sendes bare for `beta`, `premium` og `admin`. Cron-jobbene hopper over `free`-brukere selv om eldre databaseverdier har varselinnstillinger aktivert.
 
 Legg til i Vercel:
 

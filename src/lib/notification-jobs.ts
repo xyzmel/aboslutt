@@ -1,4 +1,5 @@
 import { sendMonthlySummaryEmail, sendUpcomingPaymentReminder } from "@/lib/notification-email";
+import { canUseEmailReminders, canUseMonthlySummary } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 import {
   normalizeNextPaymentDate,
@@ -41,6 +42,7 @@ export async function runUpcomingPaymentReminders({
         name: true,
         email: true,
         emailVerified: true,
+        plan: true,
         emailRemindersEnabled: true,
         reminderDaysBefore: true,
         subscriptions: {
@@ -73,6 +75,11 @@ export async function runUpcomingPaymentReminders({
 
       if (!user.emailVerified) {
         skippedReasons.unverifiedEmail += 1;
+        continue;
+      }
+
+      if (!canUseEmailReminders(user)) {
+        skippedReasons.planNotAllowed += 1;
         continue;
       }
 
@@ -200,6 +207,7 @@ export async function runMonthlySummary({
         id: true,
         name: true,
         email: true,
+        plan: true,
         subscriptions: {
           where: { status: { in: activeStatuses } },
           select: {
@@ -216,11 +224,18 @@ export async function runMonthlySummary({
 
     let emailsSent = 0;
     let activeSubscriptionsChecked = 0;
+    const skippedReasons = createSkippedReasons();
     const today = startOfDay(new Date());
     const thirtyDaysFromNow = addDays(today, 30);
 
     for (const user of users) {
       if (!user.email) {
+        skippedReasons.missingEmail += 1;
+        continue;
+      }
+
+      if (!canUseMonthlySummary(user)) {
+        skippedReasons.planNotAllowed += 1;
         continue;
       }
 
@@ -289,7 +304,7 @@ export async function runMonthlySummary({
       dueReminders: users.length,
       emailsSent,
       remindersCreated: 0,
-      skippedReasons: {},
+      skippedReasons,
     };
   });
 }
@@ -353,6 +368,7 @@ function createSkippedReasons() {
     missingEmail: 0,
     unverifiedEmail: 0,
     remindersDisabled: 0,
+    planNotAllowed: 0,
     noActiveSubscriptions: 0,
     missingOrInvalidNextPayment: 0,
     notDueToday: 0,
