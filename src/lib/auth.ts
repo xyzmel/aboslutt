@@ -14,12 +14,14 @@ type VippsProfile = {
   sub: string;
   name?: string | null;
   email?: string | null;
+  phoneNumber?: string | null;
+  phone_number?: string | null;
 };
 
 const vippsClientId = process.env.VIPPS_CLIENT_ID;
 const vippsClientSecret = process.env.VIPPS_CLIENT_SECRET;
 const vippsWellKnownUrl = process.env.VIPPS_WELL_KNOWN_URL;
-const isVippsConfigured = Boolean(vippsClientId && vippsClientSecret && vippsWellKnownUrl);
+export const isVippsConfigured = Boolean(vippsClientId && vippsClientSecret && vippsWellKnownUrl);
 const smtpConfigured = isSmtpConfigured();
 export const sessionStrategy = "jwt" as const;
 
@@ -138,9 +140,11 @@ if (isVippsConfigured) {
     wellKnown: vippsWellKnownUrl,
     clientId: vippsClientId,
     clientSecret: vippsClientSecret,
+    // Allowed for beta because Vipps Login account data is trusted; review before full production.
+    allowDangerousEmailAccountLinking: true,
     authorization: {
       params: {
-        scope: "openid name email phoneNumber",
+        scope: "openid name phoneNumber email",
         response_type: "code",
       },
     },
@@ -152,6 +156,7 @@ if (isVippsConfigured) {
         name: profile.name ?? null,
         email: profile.email ?? null,
         image: null,
+        phoneNumber: profile.phoneNumber ?? profile.phone_number ?? null,
       };
     },
   });
@@ -214,7 +219,12 @@ export const authOptions: NextAuthOptions = {
 
       return session;
     },
-    async signIn({ user, account, email }) {
+    async signIn({ user, account, email, profile }) {
+      if (account?.provider === "vipps" && user.id) {
+        await updateVippsProfileFields(user.id, profile);
+        return true;
+      }
+
       if (account?.provider !== "email" || !email?.verificationRequest) {
         return true;
       }
@@ -236,6 +246,26 @@ function getTokenId(token: JWT) {
   }
 
   return token.sub ?? "";
+}
+
+async function updateVippsProfileFields(userId: string, profile: unknown) {
+  const vippsProfile = profile as VippsProfile | undefined;
+  const phoneNumber = vippsProfile?.phoneNumber ?? vippsProfile?.phone_number ?? null;
+
+  if (!phoneNumber) {
+    return;
+  }
+
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { phoneNumber },
+      select: { id: true },
+    });
+  } catch {
+    // Never log OAuth profile payloads or tokens. Missing phone persistence should
+    // not block sign-in.
+  }
 }
 
 async function preserveGoogleRefreshToken({

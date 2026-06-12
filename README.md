@@ -132,12 +132,13 @@ Etter endring av SMTP- eller beta-env vars i Vercel må prosjektet redeployes.
 Vipps Login bruker well-known discovery fra Vipps MobilePay og scopes:
 
 ```text
-openid name email phoneNumber
+openid name phoneNumber email
 ```
 
 Legg inn callback/redirect URI hos Vipps:
 
 ```text
+https://www.aboslutt.no/api/auth/callback/vipps
 http://localhost:3000/api/auth/callback/vipps
 ```
 

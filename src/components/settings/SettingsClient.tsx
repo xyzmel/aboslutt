@@ -9,6 +9,7 @@ type SettingsClientProps = {
   googleConnected: boolean;
   gmailScopeConnected: boolean;
   googleReconnectRequired: boolean;
+  vippsConnected: boolean;
   isAdmin: boolean;
   emailRemindersEnabled: boolean;
   reminderDaysBefore: number;
@@ -21,6 +22,7 @@ export function SettingsClient({
   googleConnected,
   gmailScopeConnected,
   googleReconnectRequired,
+  vippsConnected,
   isAdmin,
   emailRemindersEnabled,
   reminderDaysBefore,
@@ -172,6 +174,7 @@ export function SettingsClient({
                   : "Ikke koblet til"}
             </p>
             <p>Gmail read-only: {gmailScopeConnected ? "Aktiv" : "Mangler"}</p>
+            <p>Vipps Login: {vippsConnected ? "Tilkoblet" : "Ikke koblet til"}</p>
           </div>
           {!googleConnected || googleReconnectRequired ? (
             <button

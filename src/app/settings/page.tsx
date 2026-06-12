@@ -24,6 +24,7 @@ export default async function SettingsPage() {
   }
 
   let googleAccount: { scope: string | null; refresh_token: string | null } | null = null;
+  let vippsAccount: { provider: string } | null = null;
   let notificationPreferences = {
     emailRemindersEnabled: true,
     reminderDaysBefore: 3,
@@ -31,12 +32,18 @@ export default async function SettingsPage() {
   };
 
   try {
-    googleAccount = await prisma.account.findFirst({
-      where: { userId: currentUser.id, provider: "google" },
-      select: { scope: true, refresh_token: true },
-    });
+    [googleAccount, vippsAccount] = await Promise.all([
+      prisma.account.findFirst({
+        where: { userId: currentUser.id, provider: "google" },
+        select: { scope: true, refresh_token: true },
+      }),
+      prisma.account.findFirst({
+        where: { userId: currentUser.id, provider: "vipps" },
+        select: { provider: true },
+      }),
+    ]);
   } catch (error) {
-    logServerError("settings:googleAccount", error, currentUser.id);
+    logServerError("settings:providerAccounts", error, currentUser.id);
   }
 
   try {
@@ -90,6 +97,7 @@ export default async function SettingsPage() {
         monthlySummaryEnabled={notificationPreferences.monthlySummaryEnabled}
         name={currentUser.name}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}
+        vippsConnected={Boolean(vippsAccount)}
       />
     </main>
   );
