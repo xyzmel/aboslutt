@@ -148,7 +148,7 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <section className="bg-white px-5 py-14 text-[#0D1B2A]">
+      <section className="bg-white px-5 py-14 text-[#0D1B2A]" id="beta">
         <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[0.8fr_1fr] lg:items-start">
           <div>
             <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Beta</p>

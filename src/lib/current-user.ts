@@ -12,6 +12,9 @@ const currentUserSelect = {
   passwordHash: true,
   image: true,
   plan: true,
+  emailRemindersEnabled: true,
+  reminderDaysBefore: true,
+  monthlySummaryEnabled: true,
   createdAt: true,
   updatedAt: true,
 } as const;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { canUseGmailScan } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 const gmailReadonlyScope = "https://www.googleapis.com/auth/gmail.readonly";
@@ -19,5 +20,7 @@ export async function GET() {
   return NextResponse.json({
     googleConnected: Boolean(googleAccount),
     gmailScopeConnected: Boolean(googleAccount?.scope?.split(" ").includes(gmailReadonlyScope)),
+    gmailScanAvailable: canUseGmailScan(currentUser),
+    plan: currentUser.plan,
   });
 }

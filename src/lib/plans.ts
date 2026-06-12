@@ -48,6 +48,40 @@ export function getManualSubscriptionLimit(user: PlanLikeUser) {
   return hasBetaEntitlements(getUserPlan(user)) ? null : freeManualSubscriptionLimit;
 }
 
+export function getPlanDisplayName(plan: Plan) {
+  const labels: Record<Plan, string> = {
+    free: "Gratis",
+    beta: "Beta",
+    premium: "Premium",
+    admin: "Admin",
+  };
+
+  return labels[plan];
+}
+
+export function getPlanFeatures(plan: Plan) {
+  if (plan === "free") {
+    return {
+      included: [
+        "Opptil 10 manuelle abonnementer",
+        "Månedlig og årlig oversikt",
+        "Grunnleggende dashboard",
+      ],
+      locked: ["Gmail-skanning", "E-postvarsler", "Månedlig oppsummering"],
+    };
+  }
+
+  return {
+    included: [
+      "Ubegrensede abonnementer",
+      "Gmail-skanning",
+      "E-postvarsler",
+      "Månedlig oppsummering",
+    ],
+    locked: [] as string[],
+  };
+}
+
 function hasBetaEntitlements(plan: Plan) {
   return plan === "beta" || plan === "premium" || plan === "admin";
 }

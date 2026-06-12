@@ -43,6 +43,7 @@ export default function EmailImportPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [gmailConnected, setGmailConnected] = useState(false);
   const [gmailScopeConnected, setGmailScopeConnected] = useState(false);
+  const [gmailScanAvailable, setGmailScanAvailable] = useState(true);
   const [editingCandidate, setEditingCandidate] = useState<EmailSubscriptionCandidate | null>(null);
   const [candidateDraft, setCandidateDraft] = useState<CandidateDraft | null>(null);
   const [isSavingCandidate, setIsSavingCandidate] = useState(false);
@@ -65,9 +66,11 @@ export default function EmailImportPage() {
       const result = (await response.json()) as {
         googleConnected: boolean;
         gmailScopeConnected: boolean;
+        gmailScanAvailable?: boolean;
       };
       setGmailConnected(result.googleConnected);
       setGmailScopeConnected(result.gmailScopeConnected);
+      setGmailScanAvailable(result.gmailScanAvailable ?? true);
     }
 
     loadConnectionStatus();
@@ -270,12 +273,24 @@ export default function EmailImportPage() {
                   Gmail read-only mangler. Koble til Google på nytt.
                 </p>
               ) : null}
+              {!gmailScanAvailable ? (
+                <p className="mt-2 rounded-xl bg-[#FFF6E8] px-3 py-2 text-xs font-semibold text-[#8A4B13]">
+                  Automatisk skanning er en beta/premium-funksjon. Du kan fortsatt legge inn abonnementer manuelt gratis.
+                </p>
+              ) : null}
               <p className="mt-3 text-xs font-semibold text-[#C8102E]">
                 Forslag kan inneholde feil. Bekreft alltid kandidaten før den lagres.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-2 sm:w-44">
-              {!gmailScopeConnected ? (
+              {!gmailScanAvailable ? (
+                <Link
+                  className="rounded-xl bg-[#C8102E] px-5 py-3 text-center text-sm font-bold text-white hover:bg-[#a90d27]"
+                  href="/pricing#beta"
+                >
+                  Be om beta
+                </Link>
+              ) : !gmailScopeConnected ? (
                 <button
                   className="rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
                   onClick={() => signIn("google", { callbackUrl: "/import/email" })}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { AdminForbiddenError, isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { sendBetaAccessApprovedEmail } from "@/lib/notification-email";
 import { prisma } from "@/lib/prisma";
 
 type AdminBetaRequestRouteProps = {
@@ -39,11 +40,20 @@ export async function PATCH(request: Request, { params }: AdminBetaRequestRouteP
   }
 
   if (action === "approve") {
+    const matchingUser = await prisma.user.findUnique({
+      where: { email: betaRequest.email },
+      select: { id: true, name: true, email: true, plan: true },
+    });
+    const shouldSendApprovalEmail = Boolean(matchingUser?.email && matchingUser.plan !== "beta");
+
     await prisma.$transaction(async (tx) => {
-      await tx.user.updateMany({
-        where: { email: betaRequest.email },
-        data: { plan: "beta" },
-      });
+      if (matchingUser) {
+        await tx.user.update({
+          where: { id: matchingUser.id },
+          data: { plan: "beta" },
+          select: { id: true },
+        });
+      }
       await tx.betaRequest.update({
         where: { id },
         data: {
@@ -54,9 +64,25 @@ export async function PATCH(request: Request, { params }: AdminBetaRequestRouteP
       });
     });
 
+    let emailWarning: string | null = null;
+    if (matchingUser?.email && shouldSendApprovalEmail) {
+      try {
+        const emailResult = await sendBetaAccessApprovedEmail({
+          to: matchingUser.email,
+          name: matchingUser.name,
+        });
+        if (!emailResult.sent) {
+          emailWarning = "Beta ble godkjent, men e-post ble ikke sendt fordi SMTP ikke er konfigurert.";
+        }
+      } catch {
+        emailWarning = "Beta ble godkjent, men e-postsending feilet.";
+      }
+    }
+
     return NextResponse.json({
       ok: true,
-      message: "Beta-tilgang er godkjent. Hvis brukeren finnes, er planen satt til beta.",
+      message: emailWarning ?? "Beta-tilgang er godkjent. Hvis brukeren finnes, er planen satt til beta.",
+      warning: emailWarning,
     });
   }
 

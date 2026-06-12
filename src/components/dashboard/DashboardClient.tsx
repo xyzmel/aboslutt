@@ -7,6 +7,8 @@ import { ConfirmCancellation } from "@/components/cancellation/ConfirmCancellati
 import { SuccessScreen } from "@/components/cancellation/SuccessScreen";
 import { SubscriptionCard } from "@/components/dashboard/SubscriptionCard";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
+import { OnboardingChecklist } from "@/components/onboarding/OnboardingChecklist";
+import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
 import {
   formatDateForShortDisplay,
   normalizeDateInputValue,
@@ -90,6 +92,9 @@ export function DashboardClient() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentPlan, setCurrentPlan] = useState("free");
+  const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
+  const [hasGoogleGmailConnected, setHasGoogleGmailConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
@@ -107,8 +112,18 @@ export function DashboardClient() {
 
         const meResponse = await fetch("/api/me", { cache: "no-store" });
         if (meResponse.ok) {
-          const meResult = (await meResponse.json()) as { user?: { isAdmin?: boolean } };
+          const meResult = (await meResponse.json()) as {
+            user?: { isAdmin?: boolean; plan?: string; emailRemindersEnabled?: boolean };
+          };
           setIsAdmin(Boolean(meResult.user?.isAdmin));
+          setCurrentPlan(meResult.user?.plan ?? "free");
+          setEmailRemindersEnabled(Boolean(meResult.user?.emailRemindersEnabled));
+        }
+
+        const connectionsResponse = await fetch("/api/connections", { cache: "no-store" });
+        if (connectionsResponse.ok) {
+          const connections = (await connectionsResponse.json()) as { gmailScopeConnected?: boolean };
+          setHasGoogleGmailConnected(Boolean(connections.gmailScopeConnected));
         }
       } catch {
         setErrorMessage("Kunne ikke hente abonnementer fra databasen.");
@@ -147,6 +162,16 @@ export function DashboardClient() {
     0,
   );
   const upcomingPayments = useMemo(() => getUpcomingPayments(subscriptionList), [subscriptionList]);
+  const hasSubscriptions = subscriptionList.length > 0;
+  const hasAnyNextPayment = subscriptionList.some((subscription) =>
+    Boolean(parseNextPaymentDate(subscription.nextPayment)),
+  );
+  const showOnboardingChecklist =
+    !hasSubscriptions ||
+    !hasAnyNextPayment ||
+    !emailRemindersEnabled ||
+    !hasGoogleGmailConnected ||
+    totalMonthlyCost <= 0;
   const isDevelopment = process.env.NODE_ENV !== "production";
   const isSessionLoading = sessionStatus === "loading";
   const userLabel = session?.user?.name ?? session?.user?.email ?? (isDevelopment ? "Lokal dev" : "");
@@ -428,6 +453,27 @@ export function DashboardClient() {
               <SummaryCard label="Aktive abonnementer" value={String(activeCount)} />
               <SummaryCard label="Estimert per år" value={`${formatCurrency(yearlyEstimate)} kr`} />
               <SummaryCard label="Prøveperioder" value={String(trialCount)} />
+            </div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+              <PlanStatusCard plan={currentPlan} />
+              {showOnboardingChecklist ? (
+                <OnboardingChecklist
+                  emailRemindersEnabled={emailRemindersEnabled}
+                  hasAnyNextPayment={hasAnyNextPayment}
+                  hasGoogleGmailConnected={hasGoogleGmailConnected}
+                  hasSubscriptions={hasSubscriptions}
+                  monthlyTotal={totalMonthlyCost}
+                />
+              ) : (
+                <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+                  <p className="text-sm font-bold uppercase tracking-wide text-emerald-700">Kom i gang</p>
+                  <h2 className="mt-1 text-2xl font-extrabold tracking-tight">Oppstarten ser bra ut</h2>
+                  <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
+                    Du har lagt inn abonnementer, datoer, varsler, Gmail og månedlig total.
+                  </p>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">

@@ -129,6 +129,43 @@ export async function sendMonthlySummaryEmail({
   });
 }
 
+export async function sendBetaAccessApprovedEmail({
+  to,
+  name,
+}: {
+  to: string;
+  name?: string | null;
+}) {
+  const dashboardUrl = getDashboardUrl();
+  const greeting = name ? `Hei ${name}!` : "Hei!";
+
+  return sendTransactionalEmail({
+    to,
+    subject: "Du har fått beta-tilgang til Aboslutt",
+    text: [
+      greeting,
+      "",
+      "Du har nå fått beta-tilgang til Aboslutt.",
+      "",
+      "Beta gir tilgang til Gmail-skanning, e-postpåminnelser og månedlig oppsummering. Manuell abonnementssporing fungerer fortsatt som før.",
+      "",
+      `Gå til oversikten din: ${dashboardUrl}`,
+      "",
+      "Personvern: Aboslutt lagrer ikke rå Gmail- eller e-postinnhold. Du bekrefter selv hva som lagres.",
+    ].join("\n"),
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0D1B2A;">
+        <h1>Beta-tilgang er aktivert</h1>
+        <p>${escapeHtml(greeting)}</p>
+        <p>Du har nå fått beta-tilgang til Aboslutt.</p>
+        <p>Beta gir tilgang til Gmail-skanning, e-postpåminnelser og månedlig oppsummering. Manuell abonnementssporing fungerer fortsatt som før.</p>
+        <p><a href="${dashboardUrl}" style="display:inline-block;background:#C8102E;color:#fff;padding:12px 18px;border-radius:10px;text-decoration:none;font-weight:700;">Gå til oversikten</a></p>
+        <p style="color:#5F6F82;font-size:13px;">Aboslutt lagrer ikke rå Gmail- eller e-postinnhold. Du bekrefter selv hva som lagres.</p>
+      </div>
+    `,
+  });
+}
+
 function getDashboardUrl() {
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
   return new URL("/dashboard", baseUrl).toString();

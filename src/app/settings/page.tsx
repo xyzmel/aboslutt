@@ -107,6 +107,7 @@ export default async function SettingsPage() {
         monthlySummaryAvailable={monthlySummaryAvailable}
         monthlySummaryEnabled={notificationPreferences.monthlySummaryEnabled}
         name={currentUser.name}
+        plan={currentUser.plan}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}
         vippsConnected={Boolean(vippsAccount)}
         vippsConfigured={isVippsConfigured()}

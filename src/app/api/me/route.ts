@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdminUser } from "@/lib/admin";
 import { getCurrentUser, unauthorizedResponse } from "@/lib/current-user";
+import { canUseEmailReminders, canUseMonthlySummary } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -23,6 +24,9 @@ export async function GET() {
       email: currentUser.email,
       name: currentUser.name,
       image: currentUser.image,
+      plan: currentUser.plan,
+      emailRemindersEnabled: canUseEmailReminders(currentUser) && currentUser.emailRemindersEnabled,
+      monthlySummaryEnabled: canUseMonthlySummary(currentUser) && currentUser.monthlySummaryEnabled,
       isAdmin: isAdminUser(currentUser),
       providers: {
         email: Boolean(currentUser.passwordHash || currentUser.emailVerified),

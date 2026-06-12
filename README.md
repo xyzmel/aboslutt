@@ -100,6 +100,20 @@ Manuell abonnementssporing er gratis å starte med. Brukere kan legge inn abonne
 
 Planlogikken ligger i `src/lib/plans.ts`. Backend håndhever at Gratis-brukere kan legge til maks 10 abonnementer, men de kan fortsatt se, redigere og slette eksisterende abonnementer. Gratis-brukere får ikke bruke Gmail-skanning, e-postvarsler eller månedlig oppsummering. Admin kan endre brukerplan fra `/admin/users/[id]`.
 
+Dashboard og innstillinger viser en planstatus-card med gjeldende plan, inkluderte funksjoner, låste funksjoner og riktig CTA. Gratis-brukere får tydelige meldinger om at manuell sporing fortsatt er gratis når Gmail-skanning eller varsler er låst.
+
+## Onboarding Checklist
+
+Dashboardet viser en oppstartsliste for nye eller uferdige kontoer. Listen bruker lagrede brukerdata og abonnementer:
+
+- første abonnement er lagt til
+- minst ett abonnement har neste trekk
+- e-postvarsler er aktivert og tilgjengelige for planen
+- Gmail read-only er koblet til
+- månedlig total er større enn 0
+
+Brukeren kan skjule listen lokalt. Skjulingen lagres i `localStorage`, ikke i databasen.
+
 ## Beta Requests And Feedback
 
 Besøkende kan be om beta-tilgang fra `/pricing`. Skjemaet lagrer navn, e-post og valgfri melding i `BetaRequest` med status `pending`.
@@ -111,6 +125,8 @@ Admin-portalen viser siste beta-forespørsler og siste feedback:
 - `Godkjenn` setter beta-forespørselen til `approved` og setter brukerens plan til `beta` hvis e-postadressen allerede finnes som bruker.
 - `Avvis` setter beta-forespørselen til `rejected`.
 - Feedback kan markeres som lest.
+
+Når en beta-forespørsel godkjennes og en eksisterende bruker endres til `beta`, forsøker appen å sende e-posten `Du har fått beta-tilgang til Aboslutt`. Hvis SMTP feiler, skal godkjenningen fortsatt lykkes og admin får en advarsel i UI.
 
 Etter migrasjonen `20260612133000_add_beta_requests_feedback_review` må produksjonsdatabasen oppdateres:
 

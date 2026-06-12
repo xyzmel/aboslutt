@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
+import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
 
 type SettingsClientProps = {
   name: string | null;
@@ -13,6 +14,7 @@ type SettingsClientProps = {
   vippsConnected: boolean;
   vippsConfigured: boolean;
   isAdmin: boolean;
+  plan: string;
   emailRemindersEnabled: boolean;
   emailRemindersAvailable: boolean;
   reminderDaysBefore: number;
@@ -29,6 +31,7 @@ export function SettingsClient({
   vippsConnected,
   vippsConfigured,
   isAdmin,
+  plan,
   emailRemindersEnabled,
   emailRemindersAvailable,
   reminderDaysBefore,
@@ -140,6 +143,8 @@ export function SettingsClient({
       ) : null}
 
       <div className="mt-6 grid gap-5">
+        <PlanStatusCard plan={plan} />
+
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
           <h2 className="text-lg font-extrabold tracking-tight">Profil</h2>
           <dl className="mt-4 space-y-3 text-sm">
@@ -239,7 +244,8 @@ export function SettingsClient({
           </p>
           {!emailRemindersAvailable || !monthlySummaryAvailable ? (
             <p className="mt-3 rounded-xl bg-[#FFF6E8] px-4 py-3 text-sm font-semibold text-[#8A4B13]">
-              Varsler og månedlig oppsummering er tilgjengelig for beta-, premium- og admin-brukere.
+              Varsler og månedlig oppsummering er beta/premium-funksjoner. Du kan fortsatt legge inn abonnementer
+              manuelt gratis.
             </p>
           ) : null}
           <div className="mt-5 grid gap-4">

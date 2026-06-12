@@ -6,9 +6,11 @@ import { useRouter } from "next/navigation";
 export function AdminBetaRequestActions({ requestId }: { requestId: string }) {
   const router = useRouter();
   const [isWorking, setIsWorking] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
 
   async function updateRequest(action: "approve" | "reject") {
     setIsWorking(true);
+    setMessage(null);
     try {
       const response = await fetch(`/api/admin/beta-requests/${requestId}`, {
         method: "PATCH",
@@ -21,7 +23,11 @@ export function AdminBetaRequestActions({ requestId }: { requestId: string }) {
         throw new Error(result.message ?? "Kunne ikke oppdatere forespørselen.");
       }
 
+      const result = (await response.json().catch(() => ({}))) as { message?: string; warning?: string };
+      setMessage(result.warning ?? result.message ?? "Forespørselen er oppdatert.");
       router.refresh();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Kunne ikke oppdatere forespørselen.");
     } finally {
       setIsWorking(false);
     }
@@ -45,6 +51,7 @@ export function AdminBetaRequestActions({ requestId }: { requestId: string }) {
       >
         Avvis
       </button>
+      {message ? <p className="text-xs font-semibold text-[#5F6F82]">{message}</p> : null}
     </div>
   );
 }
