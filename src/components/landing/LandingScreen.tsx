@@ -1,12 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
-
-const vippsLoginButtonAsset = "/vipps-login-pill-default.svg";
 
 const featureSections = [
   {
@@ -233,7 +230,9 @@ function FeatureCard({
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">{eyebrow}</p>
         {vipps ? (
-          <Image alt="Logg inn med Vipps" className="h-8 w-auto" height={44} src={vippsLoginButtonAsset} width={160} />
+          <span className="rounded-full bg-[#FF5B24]/10 px-3 py-1 text-xs font-black text-[#FF5B24]">
+            Vipps
+          </span>
         ) : null}
       </div>
       <h3 className="mt-2 text-xl font-extrabold tracking-tight">{title}</h3>
