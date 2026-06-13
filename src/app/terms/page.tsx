@@ -1,4 +1,5 @@
 import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { siteConfig } from "@/lib/site-config";
 
 export default function TermsPage() {
   return (
@@ -43,9 +44,9 @@ export default function TermsPage() {
       <section>
         <h2 className="text-lg font-bold text-[#0D1B2A]">Kontakt</h2>
         <p className="mt-2">
-          Aboslutt drives av Melby Solutions, org.nr. 925 919 020. Kontakt:{" "}
-          <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
-            kjetil.melby123@proton.me
+          Aboslutt drives av {siteConfig.companyName}, org.nr. {siteConfig.orgNumber}. Kontakt:{" "}
+          <a className="font-semibold text-[#C8102E]" href={`mailto:${siteConfig.contactEmail}`}>
+            {siteConfig.contactEmail}
           </a>
           .
         </p>

@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-
-const contactEmail = "kjetil.melby123@proton.me";
+import { siteConfig } from "@/lib/site-config";
 
 export function AppFooter({ compact = false }: { compact?: boolean }) {
   const { data: session } = useSession();
@@ -13,7 +12,9 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
     return (
       <footer className="border-t border-[#DBE4EE] bg-[#F0F4F8] px-5 py-5 text-xs text-[#5F6F82]">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <p>Aboslutt · Melby Solutions · Org.nr. 925 919 020</p>
+          <p>
+            {siteConfig.siteName} · {siteConfig.companyName} · Org.nr. {siteConfig.orgNumber}
+          </p>
           <nav className="flex flex-wrap gap-3 font-semibold">
             <Link className="hover:text-[#C8102E]" href="/privacy">
               Personvern
@@ -49,12 +50,12 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
             Få kontroll på abonnementene dine. Start manuelt, automatiser når du vil.
           </p>
           <div className="mt-5 leading-6">
-            <p className="font-semibold text-white">Melby Solutions</p>
-            <p>Org.nr. 925 919 020</p>
-            <p>Adresse: Sandekra 22, 1396 Billingstad, Akershus</p>
-            <p>Telefon: +47 958 30 043</p>
-            <a className="hover:text-white" href={`mailto:${contactEmail}`}>
-              {contactEmail}
+            <p className="font-semibold text-white">{siteConfig.companyName}</p>
+            <p>Org.nr. {siteConfig.orgNumber}</p>
+            <p>Adresse: {siteConfig.address}</p>
+            <p>Telefon: {siteConfig.phone}</p>
+            <a className="hover:text-white" href={`mailto:${siteConfig.contactEmail}`}>
+              {siteConfig.contactEmail}
             </a>
           </div>
         </div>

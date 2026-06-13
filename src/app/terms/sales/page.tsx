@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { siteConfig } from "@/lib/site-config";
 
 export default function SalesTermsPage() {
   return (
@@ -9,9 +10,9 @@ export default function SalesTermsPage() {
       title="Salgsbetingelser"
     >
       <TermsSection title="Parter">
-        Selger er Melby Solutions, org.nr. 925 919 020. Kontakt:{" "}
-        <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
-          kjetil.melby123@proton.me
+        Selger er {siteConfig.companyName}, org.nr. {siteConfig.orgNumber}. Kontakt:{" "}
+        <a className="font-semibold text-[#C8102E]" href={`mailto:${siteConfig.contactEmail}`}>
+          {siteConfig.contactEmail}
         </a>
         . Kjøper er personen som oppretter konto og kjøper tilgang til Aboslutt Premium.
       </TermsSection>
@@ -65,11 +66,11 @@ export default function SalesTermsPage() {
       </TermsSection>
 
       <TermsSection title="Kontaktinformasjon">
-        Melby Solutions, org.nr. 925 919 020. E-post:{" "}
-        <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
-          kjetil.melby123@proton.me
+        {siteConfig.companyName}, org.nr. {siteConfig.orgNumber}. E-post:{" "}
+        <a className="font-semibold text-[#C8102E]" href={`mailto:${siteConfig.contactEmail}`}>
+          {siteConfig.contactEmail}
         </a>
-        . Adresse: Sandekra 22, 1396 Billingstad, Akershus. Telefon: +47 958 30 043.
+        . Adresse: {siteConfig.address}. Telefon: {siteConfig.phone}.
       </TermsSection>
 
       <Link

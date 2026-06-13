@@ -7,6 +7,8 @@ import { getProviders, signIn } from "next-auth/react";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
+const vippsLoginButtonAsset = "/Type=Login, Shape=Pill, Background=Default.svg";
+
 type AuthMode = "login" | "register";
 type RequestState = "idle" | "loading" | "success" | "error";
 
@@ -242,22 +244,24 @@ export function MagicLinkAuthScreen({ mode, authConfig }: MagicLinkAuthScreenPro
               Fortsett med Google
             </button>
             <button
-              className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-[#FF5B24] bg-[#FF5B24] px-5 text-sm font-bold text-white shadow-sm transition hover:bg-[#e94f1f] disabled:cursor-not-allowed disabled:border-slate-300 disabled:bg-slate-200 disabled:text-slate-600"
+              aria-label={providers.vipps ? "Logg inn med Vipps" : "Vipps Login kommer snart"}
+              className="flex h-12 w-full items-center justify-center rounded-full border border-transparent bg-transparent p-0 text-sm font-bold text-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#FF5B24] focus:ring-offset-2 disabled:cursor-not-allowed disabled:rounded-xl disabled:border-slate-300 disabled:bg-slate-200 disabled:px-5 disabled:text-slate-600"
               disabled={!providers.vipps}
               onClick={() => signIn("vipps", { callbackUrl })}
               type="button"
             >
               {providers.vipps ? (
                 <Image
-                  alt=""
-                  className="h-5 w-auto"
-                  height={29}
+                  alt="Logg inn med Vipps"
+                  className="h-12 w-full object-contain"
+                  height={48}
                   priority
-                  src="/vipps-logo.png"
-                  width={96}
+                  src={vippsLoginButtonAsset}
+                  width={340}
                 />
-              ) : null}
-              {providers.vipps ? "Fortsett med Vipps" : "Vipps Login kommer snart"}
+              ) : (
+                "Vipps Login kommer snart"
+              )}
             </button>
           </div>
 

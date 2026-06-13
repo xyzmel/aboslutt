@@ -1,4 +1,5 @@
 import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { siteConfig } from "@/lib/site-config";
 
 export default function PrivacyPage() {
   return (
@@ -9,10 +10,10 @@ export default function PrivacyPage() {
       <section>
         <h2 className="text-lg font-bold text-[#0D1B2A]">Hvem står bak</h2>
         <p className="mt-2">
-          Aboslutt drives av Melby Solutions, org.nr. 925 919 020. Du kan kontakte
+          Aboslutt drives av {siteConfig.companyName}, org.nr. {siteConfig.orgNumber}. Du kan kontakte
           oss på{" "}
-          <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
-            kjetil.melby123@proton.me
+          <a className="font-semibold text-[#C8102E]" href={`mailto:${siteConfig.contactEmail}`}>
+            {siteConfig.contactEmail}
           </a>
           .
         </p>

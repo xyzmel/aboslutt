@@ -7,6 +7,8 @@ import { signIn, signOut } from "next-auth/react";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
 import { billingPlans } from "@/lib/billing/plans";
 
+const vippsLoginButtonAsset = "/Type=Login, Shape=Pill, Background=Default.svg";
+
 type SettingsClientProps = {
   name: string | null;
   email: string | null;
@@ -239,11 +241,18 @@ export function SettingsClient({
               action={
                 !vippsConnected && vippsConfigured ? (
                   <button
-                    className="inline-flex items-center justify-center rounded-xl bg-[#FF5B24] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#e94f1f]"
+                    aria-label="Logg inn med Vipps"
+                    className="inline-flex h-11 w-48 items-center justify-center rounded-full bg-transparent p-0 focus:outline-none focus:ring-2 focus:ring-[#FF5B24] focus:ring-offset-2"
                     onClick={() => signIn("vipps", { callbackUrl: "/settings" })}
                     type="button"
                   >
-                    Koble til Vipps
+                    <Image
+                      alt="Logg inn med Vipps"
+                      className="h-11 w-full object-contain"
+                      height={44}
+                      src={vippsLoginButtonAsset}
+                      width={240}
+                    />
                   </button>
                 ) : null
               }
@@ -374,7 +383,7 @@ function ConnectionRow({
   return (
     <div className="flex flex-col gap-4 rounded-2xl bg-[#F7F9FC] p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-20 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-[#DBE4EE]">
+        <div className="flex h-12 w-32 shrink-0 items-center justify-center rounded-xl bg-white px-2 ring-1 ring-[#DBE4EE]">
           {logo ?? <span className="text-sm font-black text-[#0D1B2A]">G</span>}
         </div>
         <div>
@@ -392,10 +401,10 @@ function VippsLogo() {
   return (
     <Image
       alt="Vipps"
-      className="h-auto w-14 object-contain"
-      height={29}
-      src="/vipps-logo-transparent.png"
-      width={96}
+      className="h-8 w-auto object-contain"
+      height={44}
+      src={vippsLoginButtonAsset}
+      width={160}
     />
   );
 }

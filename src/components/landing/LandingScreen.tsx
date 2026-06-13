@@ -6,6 +6,8 @@ import Link from "next/link";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
+const vippsLoginButtonAsset = "/Type=Login, Shape=Pill, Background=Default.svg";
+
 const featureSections = [
   {
     title: "Manuell oversikt",
@@ -231,7 +233,7 @@ function FeatureCard({
       <div className="flex items-start justify-between gap-3">
         <p className="text-xs font-bold uppercase tracking-wide text-[#C8102E]">{eyebrow}</p>
         {vipps ? (
-          <Image alt="" className="h-5 w-auto" height={29} src="/vipps-logo-transparent.png" width={96} />
+          <Image alt="Logg inn med Vipps" className="h-8 w-auto" height={44} src={vippsLoginButtonAsset} width={160} />
         ) : null}
       </div>
       <h3 className="mt-2 text-xl font-extrabold tracking-tight">{title}</h3>

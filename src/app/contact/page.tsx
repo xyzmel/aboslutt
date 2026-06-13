@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { PublicPageShell } from "@/components/public/PublicPageShell";
+import { siteConfig } from "@/lib/site-config";
 
 export default function ContactPage() {
   return (
@@ -8,15 +9,15 @@ export default function ContactPage() {
       title="Kontakt"
     >
       <section>
-        <h2 className="text-lg font-bold text-[#0D1B2A]">Melby Solutions</h2>
+        <h2 className="text-lg font-bold text-[#0D1B2A]">{siteConfig.companyName}</h2>
         <div className="mt-2 space-y-1">
-          <p>Org.nr. 925 919 020</p>
-          <p>Adresse: Sandekra 22, 1396 Billingstad, Akershus</p>
-          <p>Telefon: +47 958 30 043</p>
+          <p>Org.nr. {siteConfig.orgNumber}</p>
+          <p>Adresse: {siteConfig.address}</p>
+          <p>Telefon: {siteConfig.phone}</p>
           <p>
             E-post:{" "}
-            <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
-              kjetil.melby123@proton.me
+            <a className="font-semibold text-[#C8102E]" href={`mailto:${siteConfig.contactEmail}`}>
+              {siteConfig.contactEmail}
             </a>
           </p>
         </div>

@@ -248,7 +248,7 @@ Produksjon: https://api.vipps.no/access-management-1.0/access/.well-known/openid
 
 Ikke commit Vipps-nøkler. Bruk `.env.local` lokalt og sikre secret-håndtering i hostingmiljøet.
 
-Vipps-knappen bruker lokale Vipps-assets under `public/`, blant annet `public/vipps-logo.png` for innlogging og `public/vipps-logo-transparent.png` i tilkoblingsvisninger. `Pay with Vipps`-assets er reservert for eventuell fremtidig betaling/checkout. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
+Vipps Login-knappen bruker det lokale offisielle login-pill assetet `public/Type=Login, Shape=Pill, Background=Default.svg`. `Pay with Vipps`-assets er reservert for eventuell fremtidig betaling/checkout. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
 
 ### Vipps Troubleshooting
 
@@ -658,7 +658,7 @@ Vipps payment approval checklist:
 - Priser er synlige på `/pricing`.
 - Salgsbetingelser finnes på `/terms/sales`.
 - Personvern, vilkår og kontaktinfo finnes i footer.
-- Selskap vises som Melby Solutions, org.nr. 925 919 020.
+- Selskap vises som Melby Solutions, org.nr. 925 919 020, med kontakt `kontakt@aboslutt.no`.
 - Checkout/webhook-endepunkter finnes, men behandler ikke fake payments.
 - Når betaling aktiveres, må checkout opprette ekte Vipps payment/recurring agreement og webhook må verifisere betalingen før `User.plan` settes til `premium`.
 
