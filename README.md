@@ -248,7 +248,7 @@ Produksjon: https://api.vipps.no/access-management-1.0/access/.well-known/openid
 
 Ikke commit Vipps-nøkler. Bruk `.env.local` lokalt og sikre secret-håndtering i hostingmiljøet.
 
-Vipps Login-knappen bruker det lokale offisielle login-pill assetet `public/Type=Login, Shape=Pill, Background=Default.svg`. `Pay with Vipps`-assets er reservert for eventuell fremtidig betaling/checkout. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
+Vipps Login-knappen bruker det lokale offisielle login-pill assetet `public/vipps-login-pill-default.svg`. `Pay with Vipps`-assets er reservert for eventuell fremtidig betaling/checkout. Før større offentlig markedsføring bør offisielle Vipps MobilePay brand guidelines og nyeste logoressurser kontrolleres.
 
 ### Vipps Troubleshooting
 

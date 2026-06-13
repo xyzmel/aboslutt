@@ -7,7 +7,7 @@ import { getProviders, signIn } from "next-auth/react";
 import { PublicHeader } from "@/components/navigation/PublicHeader";
 import { PublicFooter } from "@/components/public/PublicFooter";
 
-const vippsLoginButtonAsset = "/Type=Login, Shape=Pill, Background=Default.svg";
+const vippsLoginButtonAsset = "/vipps-login-pill-default.svg";
 
 type AuthMode = "login" | "register";
 type RequestState = "idle" | "loading" | "success" | "error";

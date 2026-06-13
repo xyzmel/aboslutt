@@ -7,7 +7,7 @@ import { signIn, signOut } from "next-auth/react";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
 import { billingPlans } from "@/lib/billing/plans";
 
-const vippsLoginButtonAsset = "/Type=Login, Shape=Pill, Background=Default.svg";
+const vippsLoginButtonAsset = "/vipps-login-pill-default.svg";
 
 type SettingsClientProps = {
   name: string | null;
