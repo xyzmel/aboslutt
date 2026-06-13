@@ -69,7 +69,7 @@ export default function SalesTermsPage() {
         <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
           kjetil.melby123@proton.me
         </a>
-        . Adresse og telefon er ikke publisert ennå og må legges inn av admin før full kommersiell lansering.
+        . Adresse: Sandekra 22, 1396 Billingstad, Akershus. Telefon: +47 958 30 043.
       </TermsSection>
 
       <Link

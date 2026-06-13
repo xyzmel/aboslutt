@@ -11,8 +11,8 @@ export default function ContactPage() {
         <h2 className="text-lg font-bold text-[#0D1B2A]">Melby Solutions</h2>
         <div className="mt-2 space-y-1">
           <p>Org.nr. 925 919 020</p>
-          <p>Adresse: TODO/admin redigerbar</p>
-          <p>Telefon: TODO/admin redigerbar</p>
+          <p>Adresse: Sandekra 22, 1396 Billingstad, Akershus</p>
+          <p>Telefon: +47 958 30 043</p>
           <p>
             E-post:{" "}
             <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">

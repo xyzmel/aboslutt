@@ -51,7 +51,7 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
           <div className="mt-5 leading-6">
             <p className="font-semibold text-white">Melby Solutions</p>
             <p>Org.nr. 925 919 020</p>
-            <p>Adresse: Sandekra 22, 1396 Billingstad</p>
+            <p>Adresse: Sandekra 22, 1396 Billingstad, Akershus</p>
             <p>Telefon: +47 958 30 043</p>
             <a className="hover:text-white" href={`mailto:${contactEmail}`}>
               {contactEmail}
