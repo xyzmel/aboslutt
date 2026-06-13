@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { signIn, signOut } from "next-auth/react";
 import { PlanStatusCard } from "@/components/plans/PlanStatusCard";
+import { billingPlans } from "@/lib/billing/plans";
 
 type SettingsClientProps = {
   name: string | null;
@@ -21,6 +22,7 @@ type SettingsClientProps = {
   reminderDaysBefore: number;
   monthlySummaryEnabled: boolean;
   monthlySummaryAvailable: boolean;
+  paymentsConfigured: boolean;
 };
 
 export function SettingsClient({
@@ -38,6 +40,7 @@ export function SettingsClient({
   reminderDaysBefore,
   monthlySummaryEnabled,
   monthlySummaryAvailable,
+  paymentsConfigured,
 }: SettingsClientProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [isWorking, setIsWorking] = useState(false);
@@ -145,6 +148,38 @@ export function SettingsClient({
 
       <div className="mt-6 grid gap-5">
         <PlanStatusCard plan={plan} />
+
+        <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
+          <h2 className="text-lg font-extrabold tracking-tight">Abonnement og betaling</h2>
+          <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
+            Gjeldende plan: <span className="font-bold text-[#0D1B2A]">{formatPlan(plan)}</span>
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <PriceBox title={billingPlans.premiumMonthly.name} price={billingPlans.premiumMonthly.priceLabel} />
+            <PriceBox
+              badge="Beta/early price"
+              title={billingPlans.premiumYearlyBeta.name}
+              price={billingPlans.premiumYearlyBeta.priceLabel}
+            />
+          </div>
+          {!paymentsConfigured ? (
+            <p className="mt-4 rounded-xl bg-[#FFF6E8] px-4 py-3 text-sm font-semibold text-[#8A4B13]">
+              Betaling kommer snart. Du kan fortsatt bruke gratisplanen eller be om beta-tilgang.
+            </p>
+          ) : null}
+          {plan === "premium" ? (
+            <p className="mt-4 text-sm leading-6 text-[#5F6F82]">
+              Premium er aktiv. Fornyelse og kansellering av betalt abonnement kobles til checkout når betaling er implementert.
+            </p>
+          ) : (
+            <a
+              className="mt-4 inline-flex rounded-xl bg-[#C8102E] px-5 py-3 text-sm font-bold text-white hover:bg-[#a90d27]"
+              href={paymentsConfigured ? "/pricing" : "/pricing#beta"}
+            >
+              {paymentsConfigured ? "Se Premium" : "Be om beta-tilgang"}
+            </a>
+          )}
+        </section>
 
         <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
           <h2 className="text-lg font-extrabold tracking-tight">Profil</h2>
@@ -363,4 +398,27 @@ function VippsLogo() {
       width={96}
     />
   );
+}
+
+function PriceBox({ title, price, badge }: { title: string; price: string; badge?: string }) {
+  return (
+    <div className="rounded-xl bg-[#F7F9FC] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-extrabold text-[#0D1B2A]">{title}</p>
+        {badge ? <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[#5F6F82]">{badge}</span> : null}
+      </div>
+      <p className="mt-2 text-2xl font-black">{price}</p>
+    </div>
+  );
+}
+
+function formatPlan(plan: string) {
+  const labels: Record<string, string> = {
+    free: "Gratis",
+    beta: "Beta",
+    premium: "Premium",
+    admin: "Admin",
+  };
+
+  return labels[plan] ?? plan;
 }

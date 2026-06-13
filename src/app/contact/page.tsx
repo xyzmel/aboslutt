@@ -11,6 +11,8 @@ export default function ContactPage() {
         <h2 className="text-lg font-bold text-[#0D1B2A]">Melby Solutions</h2>
         <div className="mt-2 space-y-1">
           <p>Org.nr. 925 919 020</p>
+          <p>Adresse: TODO/admin redigerbar</p>
+          <p>Telefon: TODO/admin redigerbar</p>
           <p>
             E-post:{" "}
             <a className="font-semibold text-[#C8102E]" href="mailto:kjetil.melby123@proton.me">
@@ -33,7 +35,9 @@ export default function ContactPage() {
       <section className="rounded-2xl bg-[#F0F4F8] p-5">
         <h2 className="text-lg font-bold text-[#0D1B2A]">Pris</h2>
         <p className="mt-2">MVP/Beta: Gratis</p>
-        <p>Fremtidig betalt plan: Kommer senere</p>
+        <p>Premium månedlig: 29 kr/mnd</p>
+        <p>Premium årlig beta-pris: 99 kr/år</p>
+        <p className="mt-2 text-sm text-[#5F6F82]">Betaling aktiveres først når checkout er konfigurert.</p>
       </section>
 
       <Link

@@ -62,6 +62,7 @@ Viktig: Etter bytte til `provider = "postgresql"` i `prisma/schema.prisma` skal 
 - `/login` e-post/passord, Google og Vipps Login når konfigurert
 - `/register` opprett konto med e-post/passord, Google eller Vipps
 - `/pricing` plan- og prisoversikt
+- `/terms/sales` salgsbetingelser for betaling og Vipps-godkjenning
 - `/dashboard` databasebasert abonnementoversikt med legg til, rediger, slett og vedvarende avslutning
 - `/subscriptions/[id]` detaljside for et abonnement med redigering, avslutning og sletting
 - `/import/email` lokal import fra Gmail-skanning eller innlimt kvitteringstekst
@@ -625,6 +626,41 @@ Gmail- og e-postimport bruker heuristisk scoring før brukeren får se forslagen
 Brukeren må alltid bekrefte og kan redigere navn, beløp, kategori, intervall og neste trekk før noe lagres. Feil forslag kan ignoreres eller rapporteres som feil funn. Ignorerte kandidater lagres som et trygt fingerprint per bruker, slik at samme kandidat ikke dukker opp igjen. Rå Gmail-/e-postinnhold lagres ikke.
 
 Adminportalen viser trygg importkvalitet: antall lagrede importfunn, ignorerte funn, feilrapporter og siste rapporterte importfeil. Den viser ikke tokens, hemmeligheter eller rå e-postinnhold.
+
+## Vipps Payment Scaffolding
+
+Vipps Login er separat fra Vipps betaling. Betalingscheckout er forberedt, men ikke aktivert. Koden skal ikke late som om betaling er gjennomført, og brukerplan skal ikke settes til `premium` før en ekte, verifisert betalingshendelse er mottatt.
+
+Priser som vises på nettstedet:
+
+- Gratis: 0 kr, opptil 10 manuelle abonnementer, månedlig/årlig oversikt og grunnleggende dashboard.
+- Premium månedlig: 29 kr/mnd.
+- Premium årlig beta-pris: 99 kr/år.
+- Beta-brukere kan fortsatt gis tilgang manuelt av admin mens betaling rulles ut.
+
+Filer og endepunkter:
+
+- `src/lib/billing/plans.ts` inneholder prisplanene.
+- `src/lib/billing/vipps.ts` sjekker om Vipps payment-miljøvariabler finnes.
+- `POST /api/billing/checkout` krever innlogging og returnerer `PAYMENTS_NOT_CONFIGURED` når betaling ikke er aktivert.
+- `POST /api/billing/vipps/webhook` er en trygg webhook-placeholder. Fremtidig implementasjon må verifisere Vipps webhook/signatur før plan oppgraderes.
+
+Planlagte betalingsvariabler:
+
+- `VIPPS_PAYMENT_CLIENT_ID`
+- `VIPPS_PAYMENT_CLIENT_SECRET`
+- `VIPPS_PAYMENT_SUBSCRIPTION_KEY`
+- `VIPPS_PAYMENT_MERCHANT_SERIAL_NUMBER`
+- `VIPPS_PAYMENT_BASE_URL`
+
+Vipps payment approval checklist:
+
+- Priser er synlige på `/pricing`.
+- Salgsbetingelser finnes på `/terms/sales`.
+- Personvern, vilkår og kontaktinfo finnes i footer.
+- Selskap vises som Melby Solutions, org.nr. 925 919 020.
+- Checkout/webhook-endepunkter finnes, men behandler ikke fake payments.
+- Når betaling aktiveres, må checkout opprette ekte Vipps payment/recurring agreement og webhook må verifisere betalingen før `User.plan` settes til `premium`.
 
 ## TODO
 

@@ -4,6 +4,7 @@ import { AppHeader } from "@/components/navigation/AppHeader";
 import { SettingsClient } from "@/components/settings/SettingsClient";
 import { isAdminUser } from "@/lib/admin";
 import { isVippsConfigured } from "@/lib/auth-config-status";
+import { isVippsPaymentConfigured } from "@/lib/billing/vipps";
 import { getCurrentAppUser } from "@/lib/current-user";
 import { canUseEmailReminders, canUseMonthlySummary } from "@/lib/plans";
 import { prisma } from "@/lib/prisma";
@@ -101,6 +102,7 @@ export default async function SettingsPage() {
         name={currentUser.name}
         plan={currentUser.plan}
         reminderDaysBefore={notificationPreferences.reminderDaysBefore}
+        paymentsConfigured={isVippsPaymentConfigured()}
         vippsConnected={Boolean(vippsAccount)}
         vippsConfigured={isVippsConfigured()}
       />

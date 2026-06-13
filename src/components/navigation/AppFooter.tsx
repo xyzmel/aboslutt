@@ -21,6 +21,9 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
             <Link className="hover:text-[#C8102E]" href="/terms">
               Vilkår
             </Link>
+            <Link className="hover:text-[#C8102E]" href="/terms/sales">
+              Salgsbetingelser
+            </Link>
             <Link className="hover:text-[#C8102E]" href="/contact">
               Kontakt
             </Link>
@@ -48,6 +51,8 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
           <div className="mt-5 leading-6">
             <p className="font-semibold text-white">Melby Solutions</p>
             <p>Org.nr. 925 919 020</p>
+            <p>Adresse: TODO/admin redigerbar</p>
+            <p>Telefon: TODO/admin redigerbar</p>
             <a className="hover:text-white" href={`mailto:${contactEmail}`}>
               {contactEmail}
             </a>
@@ -77,6 +82,7 @@ export function AppFooter({ compact = false }: { compact?: boolean }) {
           links={[
             ["Personvern", "/privacy"],
             ["Vilkår", "/terms"],
+            ["Salgsbetingelser", "/terms/sales"],
             ["Kontakt", "/contact"],
           ]}
           title="Juridisk"

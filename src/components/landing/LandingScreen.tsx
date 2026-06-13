@@ -42,6 +42,13 @@ const featureSections = [
     points: ["Fortsett med Vipps", "Samme Aboslutt-konto", "Rask inngang til oversikten"],
     vipps: true,
   },
+  {
+    title: "Oppsigelsesassistent",
+    eyebrow: "Premium",
+    description:
+      "Få leverandørspesifikk veiledning, e-postutkast og oppfølging av oppsigelser. Du bekrefter selv når en oppsigelse faktisk er gjennomført.",
+    points: ["Provider Directory", "Utkast med samtykke", "Tidslinje og oppfølging"],
+  },
 ];
 
 const plans = [
@@ -49,20 +56,20 @@ const plans = [
     name: "Gratis",
     price: "0 kr",
     description: "For deg som vil starte med manuell abonnementskontroll.",
-    features: ["Opptil 10 abonnementer", "Manuell sporing", "Månedlig/årlig oversikt", "Grunnleggende dashboard"],
+    features: ["Opptil 10 abonnementer", "Manuell oversikt", "Månedlig/årlig oversikt", "Grunnleggende dashboard"],
   },
   {
-    name: "Beta",
-    price: "Gratis for utvalgte",
-    description: "For tidlige brukere som tester automatiske funksjoner.",
-    features: ["Ubegrensede abonnementer", "Gmail-skanning", "E-postpåminnelser", "Månedlig oppsummering"],
+    name: "Premium månedlig",
+    price: "29 kr/mnd",
+    description: "For deg som vil automatisere oversikten.",
+    features: ["Gmail-skanning", "E-postpåminnelser", "Månedlig oppsummering", "Oppsigelsesassistent"],
     highlighted: true,
   },
   {
-    name: "Premium",
-    price: "Kommer senere",
-    description: "Betalt plan er planlagt, men betaling er ikke aktivert ennå.",
-    features: ["Automatisk skanning", "Varsler og innsikt", "Fremtidig bank/Open Banking", "Fremtidig hjelp til oppsigelse"],
+    name: "Premium årlig beta",
+    price: "99 kr/år",
+    description: "Beta/early price for tidlige brukere.",
+    features: ["Alt i Premium", "Årspris for beta", "Admin kan gi beta manuelt", "Betaling kommer snart"],
   },
 ];
 
@@ -160,8 +167,8 @@ export function LandingScreen({ authConfig, user }: LandingScreenProps) {
               <p className="text-sm font-bold uppercase tracking-wide text-[#C8102E]">Priser</p>
               <h2 className="mt-3 text-3xl font-extrabold tracking-tight">Planer for beta</h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/68">
-                Manuell sporing er gratis. Automatisk skanning, varsler og oppsummeringer er SaaS-funksjoner
-                for beta og fremtidig premium.
+                Manuell oversikt er gratis. Premium gir automatisk skanning, varsler, månedlige oppsummeringer
+                og oppsigelsesassistent. Betaling starter først når checkout er konfigurert.
               </p>
             </div>
             <Link className="text-sm font-bold text-white/70 hover:text-white" href="/pricing">

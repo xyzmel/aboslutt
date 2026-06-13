@@ -96,6 +96,9 @@ export function AdminUserActions({ userId, email, plan }: AdminUserActionsProps)
   return (
     <section className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-[#DBE4EE]">
       <h2 className="text-lg font-extrabold tracking-tight">Admin-handlinger</h2>
+      <p className="mt-2 text-sm leading-6 text-[#5F6F82]">
+        Manuell planendring brukes frem til betaling er aktivert.
+      </p>
       {message ? (
         <p className="mt-4 rounded-xl bg-[#F7F9FC] px-4 py-3 text-sm font-semibold text-[#0D1B2A]">
           {message}
